@@ -12,12 +12,19 @@ from .manifest import GraphManifest, GraphRegistration, NodeDefinition
 class GraphRegistry:
     def __init__(self) -> None:
         self._registrations: dict[str, GraphRegistration[Any]] = {}
+        self._by_hash: dict[str, GraphRegistration[Any]] = {}
+
+    def _composite_key(self, graph_name: str, graph_hash: str) -> str:
+        return f"{graph_name}:{graph_hash}"
 
     def register(self, registration: GraphRegistration[Any]) -> None:
         graph_name = registration.manifest.graph_name
-        if graph_name in self._registrations:
-            raise ValueError(f"graph '{graph_name}' is already registered")
+        graph_hash = registration.manifest.graph_hash
+        composite = self._composite_key(graph_name, graph_hash)
+        if composite in self._by_hash:
+            raise ValueError(f"graph '{graph_name}' with hash '{graph_hash}' is already registered")
         self._registrations[graph_name] = registration
+        self._by_hash[composite] = registration
 
     def list_manifests(self) -> list[dict[str, Any]]:
         return [
@@ -34,13 +41,21 @@ class GraphRegistry:
         except KeyError as exc:
             raise KeyError(f"unknown graph '{graph_name}'") from exc
 
+    def registration_by_hash(self, graph_name: str, graph_hash: str) -> GraphRegistration[Any]:
+        composite = self._composite_key(graph_name, graph_hash)
+        try:
+            return self._by_hash[composite]
+        except KeyError as exc:
+            raise KeyError(f"unknown graph '{graph_name}' with hash '{graph_hash}'") from exc
+
     async def execute_node(
         self,
         graph_name: str,
+        graph_hash: str,
         node_name: str,
         state: dict[str, Any],
     ) -> dict[str, Any]:
-        registration = self.registration(graph_name)
+        registration = self.registration_by_hash(graph_name, graph_hash)
         node = registration.manifest.nodes[node_name]
         handler = registration.node_handlers[node.handler_name]
         current_state = registration.state_model.model_validate(state)
@@ -51,10 +66,11 @@ class GraphRegistry:
     async def resolve_route(
         self,
         graph_name: str,
+        graph_hash: str,
         node_name: str,
         state: dict[str, Any],
     ) -> dict[str, Any]:
-        registration = self.registration(graph_name)
+        registration = self.registration_by_hash(graph_name, graph_hash)
         node = registration.manifest.nodes[node_name]
         current_state = registration.state_model.model_validate(state)
 
@@ -77,15 +93,16 @@ class GraphRegistry:
     async def apply_event(
         self,
         graph_name: str,
-        event_handler_name: str,
+        graph_hash: str,
+        event_name: str,
         state: dict[str, Any],
         event_payload: Any,
     ) -> dict[str, Any]:
-        registration = self.registration(graph_name)
+        registration = self.registration_by_hash(graph_name, graph_hash)
         try:
-            handler = registration.event_handlers[event_handler_name]
+            handler = registration.event_handlers[event_name]
         except KeyError as exc:
-            raise KeyError(f"unknown event handler '{event_handler_name}'") from exc
+            raise KeyError(f"unknown event handler '{event_name}'") from exc
 
         current_state = registration.state_model.model_validate(state)
         result = await _maybe_await(handler(current_state, event_payload))

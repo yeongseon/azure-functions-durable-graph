@@ -105,8 +105,22 @@ class ManifestBuilder(Generic[StateModelT]):
         route: RouteHandler[StateModelT] | None = None,
         terminal: bool = False,
     ) -> "ManifestBuilder[StateModelT]":
+        if name in self._nodes:
+            raise ValueError(f"duplicate node name '{name}'")
         handler_name = _callable_name(handler)
+        if handler_name in self._node_handlers and self._node_handlers[handler_name] is not handler:
+            raise ValueError(
+                f"handler name '{handler_name}' already registered to a different callable"
+            )
         route_name = _callable_name(route) if route else None
+        if (
+            route_name is not None
+            and route_name in self._route_handlers
+            and self._route_handlers[route_name] is not route
+        ):
+            raise ValueError(
+                f"route handler name '{route_name}' already registered to a different callable"
+            )
         self._nodes[name] = NodeDefinition(
             name=name,
             handler_name=handler_name,
@@ -124,6 +138,8 @@ class ManifestBuilder(Generic[StateModelT]):
         event_name: str,
         handler: EventHandler[StateModelT],
     ) -> "ManifestBuilder[StateModelT]":
+        if event_name in self._event_handlers:
+            raise ValueError(f"duplicate event handler for event '{event_name}'")
         self._event_handlers[event_name] = handler
         return self
 
@@ -171,4 +187,6 @@ class ManifestBuilder(Generic[StateModelT]):
 def _callable_name(value: Callable[..., Any] | None) -> str:
     if value is None:
         raise ValueError("callable cannot be None")
-    return getattr(value, "__name__", repr(value))
+    module = str(getattr(value, "__module__", "") or "")
+    qualname = str(getattr(value, "__qualname__", None) or getattr(value, "__name__", repr(value)))
+    return f"{module}.{qualname}" if module else qualname

@@ -19,7 +19,6 @@ class RouteDecision(BaseModel):
     next_node: str | None = None
     event_name: str | None = None
     resume_node: str | None = None
-    event_handler_name: str | None = None
     note: str | None = None
 
     @classmethod
@@ -36,20 +35,19 @@ class RouteDecision(BaseModel):
         *,
         event_name: str,
         resume_node: str,
-        event_handler_name: str,
         note: str | None = None,
     ) -> "RouteDecision":
         return cls(
             action=RouteAction.WAIT_FOR_EVENT,
             event_name=event_name,
             resume_node=resume_node,
-            event_handler_name=event_handler_name,
             note=note,
         )
 
 
 class OrchestrationInput(BaseModel):
     graph_name: str
+    graph_hash: str
     initial_state: JsonDict
     current_node: str | None = None
     metadata: JsonDict = Field(default_factory=dict)
@@ -57,19 +55,22 @@ class OrchestrationInput(BaseModel):
 
 class NodeExecutionRequest(BaseModel):
     graph_name: str
+    graph_hash: str
     node_name: str
     state: JsonDict
 
 
 class RouteResolutionRequest(BaseModel):
     graph_name: str
+    graph_hash: str
     node_name: str
     state: JsonDict
 
 
 class EventApplyRequest(BaseModel):
     graph_name: str
-    event_handler_name: str
+    graph_hash: str
+    event_name: str
     state: JsonDict
     event_payload: Any
 
