@@ -1,0 +1,78 @@
+name: "Stale branch and issue management"
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+  pull_request:
+    types: [opened, edited, synchronize]
+  issues:
+    types: [opened, edited]
+
+jobs:
+  stale-issues:
+    runs-on: ubuntu-latest
+    if: github.repository == 'yeongseon/azure-functions-langgraph'
+
+    steps:
+      - name: "Stale issues and PRs"
+        uses: actions/stale@b5d41d4e1d5dceea10e7104786b73624c18a190f # v10.2.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          stale-issue-message: "This issue has been marked as stale because it has not had recent activity. It will be closed in 7 days if no further activity occurs. Please reopen if this is still relevant."
+          stale-pr-message: "This pull request has been marked as stale because it has not had recent activity. It will be closed in 14 days if no further activity occurs. Please reopen if this is still relevant."
+          stale-issue-label: "stale"
+          stale-pr-label: "stale"
+          exempt-issue-labels: "pinned,security,enhancement,bug,documentation"
+          exempt-pr-labels: "pinned,security,enhancement,bug,documentation,wip"
+          days-before-stale: 60
+          days-before-close: 7
+          close-issue: true
+          close-pr: false
+
+  branch-naming-validation:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: "Checkout code"
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+
+      - name: "Validate branch naming convention"
+        id: validate-branch
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const branchName = context.payload.pull_request.head.ref;
+            const validPatterns = [
+              /^dependabot\/.+$/,
+              /^feat\/.+$/,
+              /^fix\/.+$/,
+              /^docs\/.+$/,
+              /^chore\/.+$/,
+              /^ci\/.+$/,
+              /^codex\/.+$/,
+              /^main$/
+            ];
+
+            const isValid = validPatterns.some(pattern => pattern.test(branchName));
+            core.setOutput('isValid', String(isValid));
+
+            if (!isValid) {
+              core.setFailed(`Invalid branch name: ${branchName}. Please use one of the following naming conventions:
+                - dependabot/<ecosystem>/<dependency>
+                - feat/<description>
+                - fix/<description>
+                - docs/<description>
+                - chore/<description>
+                - ci/<description>
+                - codex/<description>
+                - main`);
+            } else {
+              core.info(`Branch name validation passed: ${branchName}`);
+            }
+
+            return { isValid };

@@ -1,0 +1,345 @@
+from __future__ import annotations
+
+import json
+import logging
+from typing import Any
+import uuid
+
+import azure.durable_functions as df
+import azure.functions as func
+
+from .contracts import (
+    EventApplyRequest,
+    NodeExecutionRequest,
+    OrchestrationInput,
+    RouteAction,
+    RouteDecision,
+    RouteResolutionRequest,
+    RunStatusEnvelope,
+)
+from .manifest import GraphRegistration
+from .registry import GraphRegistry
+
+
+class DurableGraphApp:
+    def __init__(
+        self,
+        *,
+        auth_level: func.AuthLevel = func.AuthLevel.ANONYMOUS,
+    ) -> None:
+        self.function_app = func.FunctionApp(http_auth_level=auth_level)
+        self.blueprint = df.Blueprint()
+        self.registry = GraphRegistry()
+
+        self._orchestrator_name = "aflg_orchestrator"
+        self._node_activity_name = "aflg_execute_node"
+        self._route_activity_name = "aflg_resolve_route"
+        self._event_activity_name = "aflg_apply_event"
+
+        self._register_runtime_functions()
+        self.function_app.register_functions(self.blueprint)
+
+    def register_registration(self, registration: GraphRegistration[Any]) -> None:
+        self.registry.register(registration)
+
+    def _register_runtime_functions(self) -> None:
+        @self.blueprint.route(route="graphs/{graph_name}/runs", methods=("POST",))  # type: ignore[untyped-decorator]
+        @self.blueprint.durable_client_input(client_name="client")  # type: ignore[untyped-decorator]
+        async def start_graph_run(
+            req: func.HttpRequest,
+            client: df.DurableOrchestrationClient,
+        ) -> func.HttpResponse:
+            graph_name = req.route_params["graph_name"]
+            body = _read_json(req)
+            instance_id = body.get("instance_id") or str(uuid.uuid4())
+
+            initial_state = body.get("input") or {}
+            metadata = body.get("metadata") or {}
+
+            request = OrchestrationInput(
+                graph_name=graph_name,
+                initial_state=initial_state,
+                metadata=metadata,
+            )
+
+            manifest = self.registry.manifest(graph_name)
+            logging.info(
+                "Starting graph '%s' instance '%s' version '%s'",
+                graph_name,
+                instance_id,
+                manifest.version,
+            )
+
+            await client.start_new(
+                self._orchestrator_name,
+                instance_id=instance_id,
+                client_input=request.model_dump(mode="python"),
+            )
+            return client.create_check_status_response(req, instance_id)  # type: ignore[no-any-return]
+
+        @self.blueprint.route(route="runs/{instance_id}", methods=("GET",))  # type: ignore[untyped-decorator]
+        @self.blueprint.durable_client_input(client_name="client")  # type: ignore[untyped-decorator]
+        async def get_run_status(
+            req: func.HttpRequest,
+            client: df.DurableOrchestrationClient,
+        ) -> func.HttpResponse:
+            instance_id = req.route_params["instance_id"]
+            status = await client.get_status(instance_id, show_input=True)
+
+            if status is None:
+                return _json_response({"error": "instance not found"}, status_code=404)
+
+            envelope = RunStatusEnvelope(
+                instance_id=instance_id,
+                runtime_status=getattr(status, "runtime_status", None),
+                custom_status=getattr(status, "custom_status", None),
+                input=getattr(status, "input_", None) or getattr(status, "input", None),
+                output=getattr(status, "output", None),
+            )
+            return _json_response(envelope.model_dump(mode="python"))
+
+        @self.blueprint.route(  # type: ignore[untyped-decorator]
+            route="runs/{instance_id}/events/{event_name}",
+            methods=("POST",),
+        )
+        @self.blueprint.durable_client_input(client_name="client")  # type: ignore[untyped-decorator]
+        async def send_run_event(
+            req: func.HttpRequest,
+            client: df.DurableOrchestrationClient,
+        ) -> func.HttpResponse:
+            instance_id = req.route_params["instance_id"]
+            event_name = req.route_params["event_name"]
+            event_payload = _read_json(req)
+            await client.raise_event(instance_id, event_name, event_payload)
+
+            return _json_response(
+                {
+                    "instance_id": instance_id,
+                    "event_name": event_name,
+                    "accepted": True,
+                },
+                status_code=202,
+            )
+
+        @self.blueprint.route(route="runs/{instance_id}/cancel", methods=("POST",))  # type: ignore[untyped-decorator]
+        @self.blueprint.durable_client_input(client_name="client")  # type: ignore[untyped-decorator]
+        async def cancel_run(
+            req: func.HttpRequest,
+            client: df.DurableOrchestrationClient,
+        ) -> func.HttpResponse:
+            instance_id = req.route_params["instance_id"]
+            body = _read_json(req)
+            reason = body.get("reason", "cancel requested by client")
+            await client.terminate(instance_id, reason)
+            return _json_response(
+                {"instance_id": instance_id, "terminated": True, "reason": reason},
+                status_code=202,
+            )
+
+        @self.blueprint.route(route="openapi.json", methods=("GET",))  # type: ignore[untyped-decorator]
+        def openapi_document(req: func.HttpRequest) -> func.HttpResponse:
+            _ = req
+            return _json_response(self._build_openapi())
+
+        @self.blueprint.route(route="health", methods=("GET",))  # type: ignore[untyped-decorator]
+        def health(req: func.HttpRequest) -> func.HttpResponse:
+            _ = req
+            return _json_response({"ok": True, "registered_graphs": self.registry.list_manifests()})
+
+        @self.blueprint.orchestration_trigger(context_name="context")  # type: ignore[untyped-decorator]
+        def aflg_orchestrator(context: df.DurableOrchestrationContext) -> Any:
+            request = OrchestrationInput.model_validate(context.get_input())
+            manifest = self.registry.manifest(request.graph_name)
+
+            current_node = request.current_node or manifest.entrypoint
+            state: dict[str, Any] = request.initial_state
+
+            while True:
+                context.set_custom_status(
+                    {
+                        "graph_name": request.graph_name,
+                        "graph_version": manifest.version,
+                        "graph_hash": manifest.graph_hash,
+                        "current_node": current_node,
+                    }
+                )
+
+                state = yield context.call_activity(
+                    self._node_activity_name,
+                    NodeExecutionRequest(
+                        graph_name=request.graph_name,
+                        node_name=current_node,
+                        state=state,
+                    ).model_dump(mode="python"),
+                )
+
+                decision_payload = yield context.call_activity(
+                    self._route_activity_name,
+                    RouteResolutionRequest(
+                        graph_name=request.graph_name,
+                        node_name=current_node,
+                        state=state,
+                    ).model_dump(mode="python"),
+                )
+                decision = RouteDecision.model_validate(decision_payload)
+
+                if decision.action == RouteAction.COMPLETE:
+                    return {
+                        "graph_name": request.graph_name,
+                        "graph_version": manifest.version,
+                        "graph_hash": manifest.graph_hash,
+                        "final_node": current_node,
+                        "state": state,
+                    }
+
+                if decision.action == RouteAction.WAIT_FOR_EVENT:
+                    context.set_custom_status(
+                        {
+                            "graph_name": request.graph_name,
+                            "graph_version": manifest.version,
+                            "graph_hash": manifest.graph_hash,
+                            "current_node": current_node,
+                            "waiting_for_event": decision.event_name,
+                            "resume_node": decision.resume_node,
+                        }
+                    )
+                    event_payload = yield context.wait_for_external_event(decision.event_name)
+                    state = yield context.call_activity(
+                        self._event_activity_name,
+                        EventApplyRequest(
+                            graph_name=request.graph_name,
+                            event_handler_name=decision.event_handler_name or "",
+                            state=state,
+                            event_payload=event_payload,
+                        ).model_dump(mode="python"),
+                    )
+                    current_node = decision.resume_node or current_node
+                    continue
+
+                if not decision.next_node:
+                    raise ValueError("route decision with action 'next' must set next_node")
+
+                current_node = decision.next_node
+
+        @self.blueprint.activity_trigger(input_name="payload")  # type: ignore[untyped-decorator]
+        async def aflg_execute_node(payload: dict[str, Any]) -> dict[str, Any]:
+            request = NodeExecutionRequest.model_validate(payload)
+            return await self.registry.execute_node(
+                request.graph_name,
+                request.node_name,
+                request.state,
+            )
+
+        @self.blueprint.activity_trigger(input_name="payload")  # type: ignore[untyped-decorator]
+        async def aflg_resolve_route(payload: dict[str, Any]) -> dict[str, Any]:
+            request = RouteResolutionRequest.model_validate(payload)
+            return await self.registry.resolve_route(
+                request.graph_name,
+                request.node_name,
+                request.state,
+            )
+
+        @self.blueprint.activity_trigger(input_name="payload")  # type: ignore[untyped-decorator]
+        async def aflg_apply_event(payload: dict[str, Any]) -> dict[str, Any]:
+            request = EventApplyRequest.model_validate(payload)
+            return await self.registry.apply_event(
+                request.graph_name,
+                request.event_handler_name,
+                request.state,
+                request.event_payload,
+            )
+
+    def _build_openapi(self) -> dict[str, Any]:
+        return {
+            "openapi": "3.0.3",
+            "info": {
+                "title": "azure-functions-langgraph runtime",
+                "version": "0.1.0a0",
+            },
+            "paths": {
+                "/api/graphs/{graph_name}/runs": {
+                    "post": {
+                        "summary": "Start a graph run",
+                        "parameters": [
+                            {
+                                "name": "graph_name",
+                                "in": "path",
+                                "required": True,
+                                "schema": {"type": "string"},
+                            }
+                        ],
+                    }
+                },
+                "/api/runs/{instance_id}": {
+                    "get": {
+                        "summary": "Get run status",
+                        "parameters": [
+                            {
+                                "name": "instance_id",
+                                "in": "path",
+                                "required": True,
+                                "schema": {"type": "string"},
+                            }
+                        ],
+                    }
+                },
+                "/api/runs/{instance_id}/events/{event_name}": {
+                    "post": {
+                        "summary": "Raise an external event",
+                        "parameters": [
+                            {
+                                "name": "instance_id",
+                                "in": "path",
+                                "required": True,
+                                "schema": {"type": "string"},
+                            },
+                            {
+                                "name": "event_name",
+                                "in": "path",
+                                "required": True,
+                                "schema": {"type": "string"},
+                            },
+                        ],
+                    }
+                },
+                "/api/runs/{instance_id}/cancel": {
+                    "post": {
+                        "summary": "Terminate a run",
+                        "parameters": [
+                            {
+                                "name": "instance_id",
+                                "in": "path",
+                                "required": True,
+                                "schema": {"type": "string"},
+                            }
+                        ],
+                    }
+                },
+                "/api/health": {"get": {"summary": "Health"}},
+            },
+            "components": {
+                "schemas": {
+                    "RegisteredGraphs": {
+                        "type": "array",
+                        "items": {"type": "object"},
+                        "x-aflg-graphs": self.registry.list_manifests(),
+                    }
+                }
+            },
+        }
+
+
+def _read_json(req: func.HttpRequest) -> dict[str, Any]:
+    try:
+        body = req.get_json()
+        return body if isinstance(body, dict) else {}
+    except ValueError:
+        return {}
+
+
+def _json_response(payload: dict[str, Any], status_code: int = 200) -> func.HttpResponse:
+    return func.HttpResponse(
+        body=json.dumps(payload, default=str),
+        mimetype="application/json",
+        status_code=status_code,
+    )
