@@ -50,19 +50,29 @@ class DurableGraphApp:
             client: df.DurableOrchestrationClient,
         ) -> func.HttpResponse:
             graph_name = req.route_params["graph_name"]
-            body = _read_json(req)
-            instance_id = body.get("instance_id") or str(uuid.uuid4())
 
+            try:
+                manifest = self.registry.manifest(graph_name)
+            except KeyError:
+                return _json_response({"error": f"unknown graph '{graph_name}'"}, status_code=404)
+
+            body = _read_json(req)
+            if body is None:
+                return _json_response(
+                    {"error": "request body must be valid JSON object"}, status_code=400
+                )
+
+            instance_id = body.get("instance_id") or str(uuid.uuid4())
             initial_state = body.get("input") or {}
             metadata = body.get("metadata") or {}
 
             request = OrchestrationInput(
                 graph_name=graph_name,
+                graph_hash=manifest.graph_hash,
                 initial_state=initial_state,
                 metadata=metadata,
             )
 
-            manifest = self.registry.manifest(graph_name)
             logging.info(
                 "Starting graph '%s' instance '%s' version '%s'",
                 graph_name,
@@ -109,7 +119,7 @@ class DurableGraphApp:
         ) -> func.HttpResponse:
             instance_id = req.route_params["instance_id"]
             event_name = req.route_params["event_name"]
-            event_payload = _read_json(req)
+            event_payload = _read_json_any(req)
             await client.raise_event(instance_id, event_name, event_payload)
 
             return _json_response(
@@ -128,7 +138,7 @@ class DurableGraphApp:
             client: df.DurableOrchestrationClient,
         ) -> func.HttpResponse:
             instance_id = req.route_params["instance_id"]
-            body = _read_json(req)
+            body = _read_json(req) or {}
             reason = body.get("reason", "cancel requested by client")
             await client.terminate(instance_id, reason)
             return _json_response(
@@ -168,6 +178,7 @@ class DurableGraphApp:
                     self._node_activity_name,
                     NodeExecutionRequest(
                         graph_name=request.graph_name,
+                        graph_hash=request.graph_hash,
                         node_name=current_node,
                         state=state,
                     ).model_dump(mode="python"),
@@ -177,6 +188,7 @@ class DurableGraphApp:
                     self._route_activity_name,
                     RouteResolutionRequest(
                         graph_name=request.graph_name,
+                        graph_hash=request.graph_hash,
                         node_name=current_node,
                         state=state,
                     ).model_dump(mode="python"),
@@ -208,7 +220,8 @@ class DurableGraphApp:
                         self._event_activity_name,
                         EventApplyRequest(
                             graph_name=request.graph_name,
-                            event_handler_name=decision.event_handler_name or "",
+                            graph_hash=request.graph_hash,
+                            event_name=decision.event_name or "",
                             state=state,
                             event_payload=event_payload,
                         ).model_dump(mode="python"),
@@ -226,6 +239,7 @@ class DurableGraphApp:
             request = NodeExecutionRequest.model_validate(payload)
             return await self.registry.execute_node(
                 request.graph_name,
+                request.graph_hash,
                 request.node_name,
                 request.state,
             )
@@ -235,6 +249,7 @@ class DurableGraphApp:
             request = RouteResolutionRequest.model_validate(payload)
             return await self.registry.resolve_route(
                 request.graph_name,
+                request.graph_hash,
                 request.node_name,
                 request.state,
             )
@@ -244,7 +259,8 @@ class DurableGraphApp:
             request = EventApplyRequest.model_validate(payload)
             return await self.registry.apply_event(
                 request.graph_name,
-                request.event_handler_name,
+                request.graph_hash,
+                request.event_name,
                 request.state,
                 request.event_payload,
             )
@@ -329,12 +345,21 @@ class DurableGraphApp:
         }
 
 
-def _read_json(req: func.HttpRequest) -> dict[str, Any]:
+def _read_json(req: func.HttpRequest) -> dict[str, Any] | None:
+    """Parse request body as a JSON object, returning *None* on failure."""
     try:
         body = req.get_json()
-        return body if isinstance(body, dict) else {}
+        return body if isinstance(body, dict) else None
     except ValueError:
-        return {}
+        return None
+
+
+def _read_json_any(req: func.HttpRequest) -> Any:
+    """Parse request body as arbitrary JSON (not restricted to dicts)."""
+    try:
+        return req.get_json()
+    except ValueError:
+        return None
 
 
 def _json_response(payload: dict[str, Any], status_code: int = 200) -> func.HttpResponse:

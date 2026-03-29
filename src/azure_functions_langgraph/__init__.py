@@ -29,6 +29,6 @@ def __getattr__(name: str) -> object:
             from .app import DurableGraphApp as _cls
 
             return _cls
-        except Exception:  # pragma: no cover
+        except (ImportError, ModuleNotFoundError):  # pragma: no cover
             return None
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

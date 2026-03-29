@@ -131,16 +131,14 @@ markers = ["e2e: real Azure end-to-end tests (require E2E_BASE_URL)"]
 branch = true
 source = ["src/azure_functions_langgraph"]
 omit = [
-    "src/azure_functions_langgraph/app.py",
     "src/azure_functions_langgraph/adapters/*",
 ]
 
 [tool.coverage.report]
 show_missing = true
-fail_under = 50
+fail_under = 80
 skip_covered = true
 omit = [
-    "src/azure_functions_langgraph/app.py",
     "src/azure_functions_langgraph/adapters/*",
 ]
 
