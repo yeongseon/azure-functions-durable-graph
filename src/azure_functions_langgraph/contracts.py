@@ -3,7 +3,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 JsonDict = dict[str, Any]
 
@@ -20,6 +20,19 @@ class RouteDecision(BaseModel):
     event_name: str | None = None
     resume_node: str | None = None
     note: str | None = None
+
+    @model_validator(mode="after")
+    def _validate_action_fields(self) -> "RouteDecision":
+        if self.action == RouteAction.NEXT:
+            if not self.next_node:
+                raise ValueError("action 'next' requires next_node")
+        elif self.action == RouteAction.WAIT_FOR_EVENT:
+            if not self.event_name or not self.resume_node:
+                raise ValueError("action 'wait_for_event' requires both event_name and resume_node")
+        elif self.action == RouteAction.COMPLETE:
+            if self.next_node:
+                raise ValueError("action 'complete' must not set next_node")
+        return self
 
     @classmethod
     def next(cls, node_name: str) -> "RouteDecision":

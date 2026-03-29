@@ -23,7 +23,6 @@ def route(state: DemoState) -> RouteDecision:
     return RouteDecision.wait_for_event(
         event_name="approval",
         resume_node="finish",
-        event_handler_name="approval",
     )
 
 
@@ -36,29 +35,35 @@ def apply_approval(state: DemoState, payload: Any) -> dict[str, bool]:
 
 
 @pytest.fixture()
-def registry() -> GraphRegistry:
+def registry() -> tuple[GraphRegistry, str]:
     builder = ManifestBuilder(graph_name="demo", state_model=DemoState, version="1")
     builder.set_entrypoint("classify")
     builder.add_node("classify", classify, route=route)
     builder.add_event_handler("approval", apply_approval)
     builder.add_node("finish", finish, terminal=True)
 
+    registration = builder.build()
     reg = GraphRegistry()
-    reg.register(builder.build())
-    return reg
+    reg.register(registration)
+    return reg, registration.manifest.graph_hash
 
 
 @pytest.mark.asyncio
-async def test_registry_routes_to_wait_for_event(registry: GraphRegistry) -> None:
-    decision = await registry.resolve_route("demo", "classify", {"message": "hello"})
+async def test_registry_routes_to_wait_for_event(
+    registry: tuple[GraphRegistry, str],
+) -> None:
+    reg, graph_hash = registry
+    decision = await reg.resolve_route("demo", graph_hash, "classify", {"message": "hello"})
     assert decision["action"] == "wait_for_event"
     assert decision["event_name"] == "approval"
 
 
 @pytest.mark.asyncio
-async def test_registry_applies_event(registry: GraphRegistry) -> None:
-    new_state = await registry.apply_event(
+async def test_registry_applies_event(registry: tuple[GraphRegistry, str]) -> None:
+    reg, graph_hash = registry
+    new_state = await reg.apply_event(
         "demo",
+        graph_hash,
         "approval",
         {"message": "hello"},
         {"approved": True},

@@ -10,6 +10,9 @@
 [![Docs](https://img.shields.io/badge/docs-gh--pages-blue)](https://yeongseon.github.io/azure-functions-langgraph/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+
+> **Alpha Notice** — This package is in early development (`0.1.0a0`). APIs may change without notice between releases. Do not use in production without thorough testing.
+
 LangGraph runtime for **Azure Functions** with **Durable Functions** orchestration.
 
 ---

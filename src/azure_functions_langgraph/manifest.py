@@ -149,6 +149,35 @@ class ManifestBuilder(Generic[StateModelT]):
         if self.entrypoint not in self._nodes:
             raise ValueError("entrypoint must reference a registered node")
 
+        # Validate next_node references
+        for name, node in self._nodes.items():
+            if node.next_node and node.next_node not in self._nodes:
+                raise ValueError(f"node '{name}' references unknown next_node '{node.next_node}'")
+
+        # Validate entrypoint reachability (BFS)
+        reachable: set[str] = set()
+        queue = [self.entrypoint]
+        while queue:
+            current = queue.pop(0)
+            if current in reachable:
+                continue
+            reachable.add(current)
+            if current not in self._nodes:
+                continue
+            node = self._nodes[current]
+            if node.next_node and node.next_node not in reachable:
+                queue.append(node.next_node)
+            # If node has a dynamic route handler, all nodes are potential targets
+            if node.route_handler_name:
+                for candidate in self._nodes:
+                    if candidate not in reachable:
+                        queue.append(candidate)
+        unreachable = set(self._nodes.keys()) - reachable
+        if unreachable:
+            raise ValueError(
+                f"nodes unreachable from entrypoint '{self.entrypoint}': {sorted(unreachable)}"
+            )
+
         manifest_without_hash = {
             "graph_name": self.graph_name,
             "version": self.version,

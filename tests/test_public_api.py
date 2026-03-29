@@ -82,12 +82,10 @@ class TestRouteDecisionFactories:
         d = RouteDecision.wait_for_event(
             event_name="approval",
             resume_node="next_step",
-            event_handler_name="handle_approval",
         )
         assert d.action == RouteAction.WAIT_FOR_EVENT
         assert d.event_name == "approval"
         assert d.resume_node == "next_step"
-        assert d.event_handler_name == "handle_approval"
 
 
 # ---------------------------------------------------------------------------
