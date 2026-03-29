@@ -26,12 +26,20 @@ class RouteDecision(BaseModel):
         if self.action == RouteAction.NEXT:
             if not self.next_node:
                 raise ValueError("action 'next' requires next_node")
+            # Clear event-only fields to prevent ambiguous payloads
+            self.event_name = None
+            self.resume_node = None
         elif self.action == RouteAction.WAIT_FOR_EVENT:
             if not self.event_name or not self.resume_node:
                 raise ValueError("action 'wait_for_event' requires both event_name and resume_node")
+            # Clear next-only field to prevent ambiguous payloads
+            self.next_node = None
         elif self.action == RouteAction.COMPLETE:
             if self.next_node:
                 raise ValueError("action 'complete' must not set next_node")
+            # Clear all routing fields
+            self.event_name = None
+            self.resume_node = None
         return self
 
     @classmethod

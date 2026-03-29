@@ -726,3 +726,89 @@ class TestManifestBuilderEdgeValidation:
         builder.add_node("b", increment, terminal=True)
         reg = builder.build()
         assert len(reg.manifest.nodes) == 2
+
+
+# ── Tests for Oracle Second Review Fixes ─────────────────────────────────────
+
+
+class TestRouteTargetValidation:
+    """Fix #1: Runtime validation of route decision targets against manifest."""
+
+    @pytest.mark.asyncio
+    async def test_resolve_route_unknown_next_node(self) -> None:
+        """Dynamic route returning unknown node name raises ValueError."""
+        from azure_functions_langgraph.registry import GraphRegistry
+
+        def bad_router(state: DemoState) -> RouteDecision:
+            # Returns a node name that doesn't exist in the manifest
+            return RouteDecision.next("does_not_exist")
+
+        builder = ManifestBuilder(graph_name="test", state_model=DemoState)
+        builder.set_entrypoint("a")
+        builder.add_node("a", increment, route=bad_router, next_node="b")
+        builder.add_node("b", increment, terminal=True)
+        reg = builder.build()
+
+        registry = GraphRegistry()
+        registry.register(reg)
+
+        with pytest.raises(ValueError, match="unknown node 'does_not_exist'"):
+            await registry.resolve_route("test", reg.manifest.graph_hash, "a", {"value": 0})
+
+    @pytest.mark.asyncio
+    async def test_resolve_route_unknown_resume_node(self) -> None:
+        """Route returning wait_for_event with unknown resume_node raises ValueError."""
+        from azure_functions_langgraph.registry import GraphRegistry
+
+        def event_router(state: DemoState) -> RouteDecision:
+            return RouteDecision.wait_for_event(event_name="approval", resume_node="does_not_exist")
+
+        builder = ManifestBuilder(graph_name="test2", state_model=DemoState)
+        builder.set_entrypoint("a")
+        builder.add_node("a", increment, route=event_router, next_node="b")
+        builder.add_node("b", increment, terminal=True)
+        reg = builder.build()
+
+        registry = GraphRegistry()
+        registry.register(reg)
+
+        with pytest.raises(ValueError, match="unknown resume_node 'does_not_exist'"):
+            await registry.resolve_route("test2", reg.manifest.graph_hash, "a", {"value": 0})
+
+
+class TestRouteDecisionFieldCleaning:
+    """Fix #3: Spurious fields are cleaned per action type."""
+
+    def test_next_clears_event_fields(self) -> None:
+        """action=NEXT should clear event_name and resume_node."""
+        d = RouteDecision(
+            action=RouteAction.NEXT,
+            next_node="b",
+            event_name="stale",
+            resume_node="stale",
+        )
+        assert d.next_node == "b"
+        assert d.event_name is None
+        assert d.resume_node is None
+
+    def test_wait_for_event_clears_next_node(self) -> None:
+        """action=WAIT_FOR_EVENT should clear next_node."""
+        d = RouteDecision(
+            action=RouteAction.WAIT_FOR_EVENT,
+            event_name="approval",
+            resume_node="b",
+            next_node="stale",
+        )
+        assert d.event_name == "approval"
+        assert d.resume_node == "b"
+        assert d.next_node is None
+
+    def test_complete_clears_event_fields(self) -> None:
+        """action=COMPLETE should clear event_name and resume_node."""
+        d = RouteDecision(
+            action=RouteAction.COMPLETE,
+            event_name="stale",
+            resume_node="stale",
+        )
+        assert d.event_name is None
+        assert d.resume_node is None

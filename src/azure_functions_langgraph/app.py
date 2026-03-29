@@ -7,6 +7,7 @@ import uuid
 
 import azure.durable_functions as df
 import azure.functions as func
+from pydantic import ValidationError
 
 from .contracts import (
     EventApplyRequest,
@@ -66,12 +67,18 @@ class DurableGraphApp:
             initial_state = body.get("input") or {}
             metadata = body.get("metadata") or {}
 
-            request = OrchestrationInput(
-                graph_name=graph_name,
-                graph_hash=manifest.graph_hash,
-                initial_state=initial_state,
-                metadata=metadata,
-            )
+            try:
+                request = OrchestrationInput(
+                    graph_name=graph_name,
+                    graph_hash=manifest.graph_hash,
+                    initial_state=initial_state,
+                    metadata=metadata,
+                )
+            except ValidationError as exc:
+                return _json_response(
+                    {"error": "invalid request body", "details": exc.errors()},
+                    status_code=400,
+                )
 
             logging.info(
                 "Starting graph '%s' instance '%s' version '%s'",
@@ -237,33 +244,60 @@ class DurableGraphApp:
         @self.blueprint.activity_trigger(input_name="payload")  # type: ignore[untyped-decorator]
         async def aflg_execute_node(payload: dict[str, Any]) -> dict[str, Any]:
             request = NodeExecutionRequest.model_validate(payload)
-            return await self.registry.execute_node(
-                request.graph_name,
-                request.graph_hash,
-                request.node_name,
-                request.state,
-            )
+            try:
+                return await self.registry.execute_node(
+                    request.graph_name,
+                    request.graph_hash,
+                    request.node_name,
+                    request.state,
+                )
+            except Exception:
+                logging.exception(
+                    "execute_node failed: graph=%s hash=%s node=%s",
+                    request.graph_name,
+                    request.graph_hash,
+                    request.node_name,
+                )
+                raise
 
         @self.blueprint.activity_trigger(input_name="payload")  # type: ignore[untyped-decorator]
         async def aflg_resolve_route(payload: dict[str, Any]) -> dict[str, Any]:
             request = RouteResolutionRequest.model_validate(payload)
-            return await self.registry.resolve_route(
-                request.graph_name,
-                request.graph_hash,
-                request.node_name,
-                request.state,
-            )
+            try:
+                return await self.registry.resolve_route(
+                    request.graph_name,
+                    request.graph_hash,
+                    request.node_name,
+                    request.state,
+                )
+            except Exception:
+                logging.exception(
+                    "resolve_route failed: graph=%s hash=%s node=%s",
+                    request.graph_name,
+                    request.graph_hash,
+                    request.node_name,
+                )
+                raise
 
         @self.blueprint.activity_trigger(input_name="payload")  # type: ignore[untyped-decorator]
         async def aflg_apply_event(payload: dict[str, Any]) -> dict[str, Any]:
             request = EventApplyRequest.model_validate(payload)
-            return await self.registry.apply_event(
-                request.graph_name,
-                request.graph_hash,
-                request.event_name,
-                request.state,
-                request.event_payload,
-            )
+            try:
+                return await self.registry.apply_event(
+                    request.graph_name,
+                    request.graph_hash,
+                    request.event_name,
+                    request.state,
+                    request.event_payload,
+                )
+            except Exception:
+                logging.exception(
+                    "apply_event failed: graph=%s hash=%s event=%s",
+                    request.graph_name,
+                    request.graph_hash,
+                    request.event_name,
+                )
+                raise
 
     def _build_openapi(self) -> dict[str, Any]:
         return {

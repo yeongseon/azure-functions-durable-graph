@@ -10,6 +10,15 @@ from .manifest import GraphManifest, GraphRegistration, NodeDefinition
 
 
 class GraphRegistry:
+    """In-memory store for graph registrations.
+
+    .. note::
+        This class is **not** thread-safe.  All ``register()`` calls should
+        happen during application startup before the host begins accepting
+        requests.  Concurrent registration from multiple threads is
+        unsupported and may result in inconsistent internal state.
+    """
+
     def __init__(self) -> None:
         self._registrations: dict[str, GraphRegistration[Any]] = {}
         self._by_hash: dict[str, GraphRegistration[Any]] = {}
@@ -87,6 +96,18 @@ class GraphRegistry:
 
         else:
             decision = RouteDecision.complete(note="implicit completion: no outgoing edge")
+
+        # Validate that route decision targets exist in the manifest
+        if decision.next_node and decision.next_node not in registration.manifest.nodes:
+            raise ValueError(
+                f"route decision references unknown node '{decision.next_node}' "
+                f"in graph '{graph_name}'"
+            )
+        if decision.resume_node and decision.resume_node not in registration.manifest.nodes:
+            raise ValueError(
+                f"route decision references unknown resume_node '{decision.resume_node}' "
+                f"in graph '{graph_name}'"
+            )
 
         return decision.model_dump(mode="python")
 
