@@ -132,7 +132,7 @@ omit = [
 
 [tool.coverage.report]
 show_missing = true
-fail_under = 80
+fail_under = 90
 skip_covered = true
 omit = [
     "src/azure_functions_durable_graph/adapters/*",
