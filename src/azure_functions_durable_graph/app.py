@@ -9,6 +9,7 @@ import azure.durable_functions as df
 import azure.functions as func
 from pydantic import ValidationError
 
+from . import __version__
 from .contracts import (
     EventApplyRequest,
     NodeExecutionRequest,
@@ -308,7 +309,7 @@ class DurableGraphApp:
             "openapi": "3.0.3",
             "info": {
                 "title": "azure-functions-durable-graph runtime",
-                "version": "0.1.0a0",
+                "version": __version__,
             },
             "paths": {
                 "/api/graphs/{graph_name}/runs": {

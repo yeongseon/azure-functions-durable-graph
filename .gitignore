@@ -10,5 +10,6 @@ dist/
 build/
 *.egg-info/
 local.settings.json
+!examples/*/local.settings.json
 site/
 .DS_Store
