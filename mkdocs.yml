@@ -1,7 +1,7 @@
-site_name: Azure Functions LangGraph
-site_description: LangGraph runtime for Azure Functions with Durable Functions orchestration
+site_name: Azure Functions Durable Graph
+site_description: Manifest-first graph runtime for Azure Functions with Durable Functions orchestration
 site_author: Yeongseon Choe
-repo_url: https://github.com/yeongseon/azure-functions-langgraph
+repo_url: https://github.com/yeongseon/azure-functions-durable-graph
 edit_uri: edit/main/docs/
 
 theme:
@@ -21,6 +21,8 @@ nav:
       - Usage: usage.md
       - Architecture: architecture.md
   - Examples:
+      - Data Pipeline: examples/data_pipeline.md
+      - Content Classifier: examples/content_classifier.md
       - Support Agent: examples/support_agent.md
   - API Reference: api.md
   - Contributing:
@@ -66,7 +68,7 @@ plugins:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/yeongseon/azure-functions-langgraph
+      link: https://github.com/yeongseon/azure-functions-durable-graph
   copyright: |
     © 2026 Yeongseon Choe – MIT Licensed
 

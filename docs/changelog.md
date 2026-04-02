@@ -1,6 +1,6 @@
 # Changelog
 
-This page documents the version history and migration paths for the `azure-functions-langgraph` package.
+This page documents the version history and migration paths for the `azure-functions-durable-graph` package.
 
 ## Versioning Scheme
 

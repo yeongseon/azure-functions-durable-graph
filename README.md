@@ -1,19 +1,20 @@
-# Azure Functions LangGraph
+# Azure Functions Durable Graph
 
-[![PyPI](https://img.shields.io/pypi/v/azure-functions-langgraph.svg)](https://pypi.org/project/azure-functions-langgraph/)
-[![Python Version](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue)](https://pypi.org/project/azure-functions-langgraph/)
-[![CI](https://github.com/yeongseon/azure-functions-langgraph/actions/workflows/ci-test.yml/badge.svg)](https://github.com/yeongseon/azure-functions-langgraph/actions/workflows/ci-test.yml)
-[![Release](https://github.com/yeongseon/azure-functions-langgraph/actions/workflows/publish-pypi.yml/badge.svg)](https://github.com/yeongseon/azure-functions-langgraph/actions/workflows/publish-pypi.yml)
-[![Security Scans](https://github.com/yeongseon/azure-functions-langgraph/actions/workflows/security.yml/badge.svg)](https://github.com/yeongseon/azure-functions-langgraph/actions/workflows/security.yml)
-[![codecov](https://codecov.io/gh/yeongseon/azure-functions-langgraph/branch/main/graph/badge.svg)](https://codecov.io/gh/yeongseon/azure-functions-langgraph)
+[![PyPI](https://img.shields.io/pypi/v/azure-functions-durable-graph.svg)](https://pypi.org/project/azure-functions-durable-graph/)
+[![Python Version](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue)](https://pypi.org/project/azure-functions-durable-graph/)
+[![CI](https://github.com/yeongseon/azure-functions-durable-graph/actions/workflows/ci-test.yml/badge.svg)](https://github.com/yeongseon/azure-functions-durable-graph/actions/workflows/ci-test.yml)
+[![Release](https://github.com/yeongseon/azure-functions-durable-graph/actions/workflows/publish-pypi.yml/badge.svg)](https://github.com/yeongseon/azure-functions-durable-graph/actions/workflows/publish-pypi.yml)
+[![Security Scans](https://github.com/yeongseon/azure-functions-durable-graph/actions/workflows/security.yml/badge.svg)](https://github.com/yeongseon/azure-functions-durable-graph/actions/workflows/security.yml)
+[![codecov](https://codecov.io/gh/yeongseon/azure-functions-durable-graph/branch/main/graph/badge.svg)](https://codecov.io/gh/yeongseon/azure-functions-durable-graph)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://pre-commit.com/)
-[![Docs](https://img.shields.io/badge/docs-gh--pages-blue)](https://yeongseon.github.io/azure-functions-langgraph/)
+[![Docs](https://img.shields.io/badge/docs-gh--pages-blue)](https://yeongseon.github.io/azure-functions-durable-graph/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+Read this in: [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-CN.md)
 
 > **Alpha Notice** — This package is in early development (`0.1.0a0`). APIs may change without notice between releases. Do not use in production without thorough testing.
 
-LangGraph runtime for **Azure Functions** with **Durable Functions** orchestration.
+Manifest-first graph runtime for **Azure Functions** with **Durable Functions** orchestration.
 
 ---
 
@@ -22,10 +23,10 @@ Part of the **Azure Functions Python DX Toolkit**
 
 ## Why this exists
 
-Running LLM-powered graph workflows on Azure Functions is harder than it should be:
+Running graph-shaped workflows on Azure Functions is harder than it should be:
 
 - **Orchestrator determinism** — Durable Functions orchestrators must be deterministic; calling LLMs or tools directly inside them breaks replay safety
-- **Graph-to-runtime gap** — Translating a LangGraph-style node/edge design into Durable Functions activities requires repetitive plumbing
+- **Graph-to-runtime gap** — Translating a node/edge graph design into Durable Functions activities requires repetitive plumbing
 - **No standard runtime** — Each team builds its own wiring between graph definitions and Durable Functions primitives
 
 ## What it does
@@ -42,7 +43,7 @@ Running LLM-powered graph workflows on Azure Functions is harder than it should 
 - Pydantic v2-based state models
 - Graph topologies: sequential, conditional, and event-driven
 
-This package does **not** currently include automatic LangGraph translation. The adapter boundary is reserved for a future release.
+This package is independent of LangGraph and has no dependency on it. The name was inspired by LangGraph's node/edge model.
 
 ## Features
 
@@ -50,12 +51,12 @@ This package does **not** currently include automatic LangGraph translation. The
 - Deterministic Durable Functions orchestrator with configurable execution loop
 - Typed state management via Pydantic v2 models
 - Built-in HTTP endpoints: start run, get status, send event, cancel, health, OpenAPI
-- Graph versioning with topology-derived hash for safe deployments
+- Graph versioning with manifest-derived hash for safe deployments
 
 ## Installation
 
 ```bash
-pip install azure-functions-langgraph
+pip install azure-functions-durable-graph
 ```
 
 Your Azure Functions app should also include:
@@ -63,14 +64,14 @@ Your Azure Functions app should also include:
 ```text
 azure-functions
 azure-functions-durable
-azure-functions-langgraph
+azure-functions-durable-graph
 ```
 
 For local development:
 
 ```bash
-git clone https://github.com/yeongseon/azure-functions-langgraph.git
-cd azure-functions-langgraph
+git clone https://github.com/yeongseon/azure-functions-durable-graph.git
+cd azure-functions-durable-graph
 pip install -e .[dev]
 ```
 
@@ -79,7 +80,7 @@ pip install -e .[dev]
 ```python
 from pydantic import BaseModel
 
-from azure_functions_langgraph import DurableGraphApp, ManifestBuilder, RouteDecision
+from azure_functions_durable_graph import DurableGraphApp, ManifestBuilder, RouteDecision
 
 
 class MyState(BaseModel):
@@ -119,13 +120,22 @@ app = runtime.function_app
 - You need graph-shaped LLM workflows on Azure Functions
 - You want deterministic Durable Functions orchestration without manual activity wiring
 - You need human-in-the-loop approval patterns (external events)
-- You want versioned graph deployments with topology hashing
+- You want versioned graph deployments with manifest-derived hashing
+
+## Examples
+
+| Example | Pattern | Key Concepts |
+|---------|---------|--------------|
+| [Data Pipeline](examples/data_pipeline/) | Sequential | `next_node` chaining, state accumulation |
+| [Content Classifier](examples/content_classifier/) | Conditional routing | `RouteDecision.next()`, fan-in topology |
+| [Support Agent](examples/support_agent/) | Human-in-the-loop | `wait_for_event`, external events, approval flow |
 
 ## Documentation
 
 - Project docs live under `docs/`
 - Smoke-tested examples live under `examples/`
-
+- Product requirements: `PRD.md`
+- Design principles: `DESIGN.md`
 ## Ecosystem
 
 Part of the **Azure Functions Python DX Toolkit**:
@@ -137,7 +147,7 @@ Part of the **Azure Functions Python DX Toolkit**:
 | [azure-functions-logging](https://github.com/yeongseon/azure-functions-logging) | Structured logging and observability |
 | [azure-functions-doctor](https://github.com/yeongseon/azure-functions-doctor) | Pre-deploy diagnostic CLI |
 | [azure-functions-scaffold](https://github.com/yeongseon/azure-functions-scaffold) | Project scaffolding |
-| **azure-functions-langgraph** | LangGraph runtime with Durable Functions |
+| **azure-functions-durable-graph** | Manifest-first graph runtime with Durable Functions |
 | [azure-functions-python-cookbook](https://github.com/yeongseon/azure-functions-python-cookbook) | Recipes and examples |
 
 ## Disclaimer

@@ -4,9 +4,9 @@
 
 This package provides a runtime for executing graph-shaped workflows on Azure Functions
 with Durable Functions. The manifest-first approach is inspired by LangGraph's
-node/edge model, but the runtime is independent. A future LangGraph adapter will
-allow automatic translation from LangGraph graph definitions to this runtime's
-manifest format.
+node/edge model, but the runtime is completely independent and has no dependency
+on LangGraph. The package was originally named `azure-functions-langgraph` but was
+renamed to `azure-functions-durable-graph` to avoid confusion.
 
 ## Can I use this without Pydantic?
 
@@ -70,8 +70,9 @@ curl -X POST http://localhost:7071/api/runs/{instance_id}/events/approval \
 ## What does the graph hash represent?
 
 The `graph_hash` in the manifest is a SHA-256 hash (first 16 chars) of the
-canonical JSON representation of the graph topology. It changes when nodes,
-edges, or event handlers are added, removed, or renamed.
+canonical JSON representation of the full manifest — including graph name,
+version, state model name, node definitions, event handlers, and metadata.
+It changes when any part of the manifest changes.
 
 ## Can I customize the HTTP auth level?
 
@@ -88,7 +89,7 @@ runtime = DurableGraphApp(auth_level=func.AuthLevel.FUNCTION)
 Use `ManifestBuilder` and `GraphRegistry` directly in unit tests:
 
 ```python
-from azure_functions_langgraph import ManifestBuilder
+from azure_functions_durable_graph import ManifestBuilder
 
 builder = ManifestBuilder(graph_name="test", state_model=MyState)
 builder.set_entrypoint("step")

@@ -1,7 +1,7 @@
 # Troubleshooting
 
 This guide covers the most common issues when using
-`azure-functions-langgraph` in Azure Functions Python v2 apps with Durable Functions.
+`azure-functions-durable-graph` in Azure Functions Python v2 apps with Durable Functions.
 
 If you are still setting up, read [Installation](installation.md) and
 [Quickstart](getting-started.md) first.
@@ -19,7 +19,7 @@ Before deep debugging, confirm:
 
 ## Import and environment issues
 
-### `ImportError: No module named 'azure_functions_langgraph'`
+### `ImportError: No module named 'azure_functions_durable_graph'`
 
 Cause:
 

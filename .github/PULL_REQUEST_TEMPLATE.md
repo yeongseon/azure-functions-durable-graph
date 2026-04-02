@@ -30,7 +30,7 @@
 
 ## Version Management
 
-- [ ] If adding new features, I have bumped the version in `src/azure_functions_langgraph/__init__.py`
+- [ ] If adding new features, I have bumped the version in `src/azure_functions_durable_graph/__init__.py`
 - [ ] I have updated `CHANGELOG.md` with detailed changes
 
 **Note:** See `CONTRIBUTING.md` for version management guidelines.

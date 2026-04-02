@@ -3,8 +3,8 @@ from typing import Any
 from pydantic import BaseModel
 import pytest
 
-from azure_functions_langgraph import ManifestBuilder, RouteDecision
-from azure_functions_langgraph.registry import GraphRegistry
+from azure_functions_durable_graph import ManifestBuilder, RouteDecision
+from azure_functions_durable_graph.registry import GraphRegistry
 
 
 class DemoState(BaseModel):
@@ -69,3 +69,55 @@ async def test_registry_applies_event(registry: tuple[GraphRegistry, str]) -> No
         {"approved": True},
     )
     assert new_state["approved"] is True
+
+
+@pytest.mark.asyncio
+async def test_registration_by_hash_returns_correct_version(
+    registry: tuple[GraphRegistry, str],
+) -> None:
+    """Verify that registration_by_hash resolves the exact version, not just the latest."""
+    reg, graph_hash = registry
+    registration = reg.registration_by_hash("demo", graph_hash)
+    assert registration.manifest.graph_hash == graph_hash
+    assert registration.manifest.graph_name == "demo"
+
+
+def test_registration_by_hash_unknown_hash_raises() -> None:
+    """Verify that an unknown hash raises KeyError."""
+    reg = GraphRegistry()
+    builder = ManifestBuilder(graph_name="demo", state_model=DemoState, version="1")
+    builder.set_entrypoint("classify")
+    builder.add_node("classify", classify, next_node="finish")
+    builder.add_node("finish", finish, terminal=True)
+    reg.register(builder.build())
+
+    with pytest.raises(KeyError, match="unknown graph"):
+        reg.registration_by_hash("demo", "nonexistent_hash")
+
+
+def test_multi_version_registration() -> None:
+    """Multiple versions of the same graph should coexist by hash."""
+    reg = GraphRegistry()
+
+    builder_v1 = ManifestBuilder(graph_name="demo", state_model=DemoState, version="1")
+    builder_v1.set_entrypoint("classify")
+    builder_v1.add_node("classify", classify, next_node="finish")
+    builder_v1.add_node("finish", finish, terminal=True)
+    reg_v1 = builder_v1.build()
+    reg.register(reg_v1)
+    hash_v1 = reg_v1.manifest.graph_hash
+
+    builder_v2 = ManifestBuilder(graph_name="demo", state_model=DemoState, version="2")
+    builder_v2.set_entrypoint("classify")
+    builder_v2.add_node("classify", classify, next_node="finish")
+    builder_v2.add_node("finish", finish, terminal=True)
+    reg_v2 = builder_v2.build()
+    reg.register(reg_v2)
+    hash_v2 = reg_v2.manifest.graph_hash
+
+    assert hash_v1 != hash_v2
+    # Latest by name is v2
+    assert reg.manifest("demo").version == "2"
+    # But by-hash still resolves v1
+    assert reg.registration_by_hash("demo", hash_v1).manifest.version == "1"
+    assert reg.registration_by_hash("demo", hash_v2).manifest.version == "2"

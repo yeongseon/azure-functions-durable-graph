@@ -1,6 +1,6 @@
 # Contributing Guide
 
-We welcome contributions to the `azure-functions-langgraph` project.
+We welcome contributions to the `azure-functions-durable-graph` project.
 
 ## How to Contribute
 
@@ -31,6 +31,16 @@ make cov         # Run tests with coverage
 make check-all   # Run the full local gate
 ```
 
+## Example Coverage Policy
+
+Examples are part of the supported developer experience and should stay runnable.
+
+- Keep one representative example for the minimal supported workflow.
+- Keep one complex example for combined graph topologies (conditional + event-driven).
+- Add or update smoke tests whenever an example changes.
+- Prefer lightweight smoke coverage over infrastructure-heavy end-to-end tests.
+
+
 ## Commit Message Guidelines
 
 We follow the [Conventional Commits](https://www.conventionalcommits.org/) specification.
@@ -50,7 +60,7 @@ We follow the [Conventional Commits](https://www.conventionalcommits.org/) speci
 ### Examples
 
 ```bash
-git commit -m "feat: add LangGraph StateGraph adapter"
+git commit -m "feat: add graph adapter for external framework"
 git commit -m "fix: handle empty orchestration input"
 git commit -m "docs: improve quickstart"
 git commit -m "refactor: extract route normalization"
@@ -59,7 +69,7 @@ git commit -m "chore: update dev dependencies"
 
 ## Version Management
 
-Update the version number in `src/azure_functions_langgraph/__init__.py` when:
+Update the version number in `src/azure_functions_durable_graph/__init__.py` when:
 
 1. New features are added -> increment the minor version.
 2. Bug fixes are added -> increment the patch version.
@@ -67,10 +77,10 @@ Update the version number in `src/azure_functions_langgraph/__init__.py` when:
 
 When updating the version, also:
 
+- Update `PRD.md` if scope or goals changed.
 - Update `CHANGELOG.md`.
 - Run `make check-all`.
 - Ensure CI passes.
-
 ## Pre-commit Hook
 
 Install pre-commit hooks with:

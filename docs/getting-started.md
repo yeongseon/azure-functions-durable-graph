@@ -1,6 +1,6 @@
 # Getting Started
 
-This quickstart walks you from zero to a running LangGraph-powered Azure Functions
+This quickstart walks you from zero to a running graph-powered Azure Functions
 application in a few minutes.
 
 By the end, you will have:
@@ -22,7 +22,7 @@ Before starting, make sure you have:
 3. Dependencies installed:
    - `azure-functions`
    - `azure-functions-durable`
-   - `azure-functions-langgraph`
+   - `azure-functions-durable-graph`
    - `pydantic` v2.
 
 See [Installation](installation.md) for version details.
@@ -65,7 +65,7 @@ def respond(state: TicketState) -> dict:
 Use `ManifestBuilder` to declare the graph topology:
 
 ```python
-from azure_functions_langgraph import ManifestBuilder
+from azure_functions_durable_graph import ManifestBuilder
 
 builder = ManifestBuilder(graph_name="ticket_router", state_model=TicketState)
 builder.set_entrypoint("classify")
@@ -80,7 +80,7 @@ registration = builder.build()
 Wire the registration into `DurableGraphApp`:
 
 ```python
-from azure_functions_langgraph import DurableGraphApp
+from azure_functions_durable_graph import DurableGraphApp
 
 runtime = DurableGraphApp()
 runtime.register_registration(registration)

@@ -1,9 +1,9 @@
 # API Reference
 
-This page documents the public API exported from `azure_functions_langgraph`.
+This page documents the public API exported from `azure_functions_durable_graph`.
 
 ```python
-from azure_functions_langgraph import (
+from azure_functions_durable_graph import (
     DurableGraphApp,
     GraphManifest,
     GraphRegistration,
@@ -20,14 +20,14 @@ from azure_functions_langgraph import (
 
 ## `ManifestBuilder`
 
-::: azure_functions_langgraph.ManifestBuilder
+::: azure_functions_durable_graph.ManifestBuilder
 
 ### Usage example: building a graph
 
 ```python
 from pydantic import BaseModel
 
-from azure_functions_langgraph import ManifestBuilder, RouteDecision
+from azure_functions_durable_graph import ManifestBuilder, RouteDecision
 
 
 class AgentState(BaseModel):
@@ -57,7 +57,7 @@ registration = builder.build()
 
 ## `GraphManifest`
 
-::: azure_functions_langgraph.GraphManifest
+::: azure_functions_durable_graph.GraphManifest
 
 The manifest is a Pydantic model containing:
 
@@ -72,7 +72,7 @@ The manifest is a Pydantic model containing:
 
 ## `GraphRegistration`
 
-::: azure_functions_langgraph.GraphRegistration
+::: azure_functions_durable_graph.GraphRegistration
 
 A dataclass containing:
 
@@ -84,7 +84,7 @@ A dataclass containing:
 
 ## `RouteDecision`
 
-::: azure_functions_langgraph.RouteDecision
+::: azure_functions_durable_graph.RouteDecision
 
 ### Factory methods
 
@@ -99,13 +99,12 @@ RouteDecision.complete(note="all done")
 RouteDecision.wait_for_event(
     event_name="approval",
     resume_node="process",
-    event_handler_name="merge_approval",
 )
 ```
 
 ## `RouteAction`
 
-::: azure_functions_langgraph.RouteAction
+::: azure_functions_durable_graph.RouteAction
 
 An enum with values:
 
@@ -115,7 +114,7 @@ An enum with values:
 
 ## `DurableGraphApp`
 
-::: azure_functions_langgraph.DurableGraphApp
+::: azure_functions_durable_graph.DurableGraphApp
 
 !!! note "Import safety"
     `DurableGraphApp` requires `azure-functions` and `azure-functions-durable`
@@ -125,7 +124,7 @@ An enum with values:
 ### Usage example: wiring a Function App
 
 ```python
-from azure_functions_langgraph import DurableGraphApp
+from azure_functions_durable_graph import DurableGraphApp
 
 runtime = DurableGraphApp()
 runtime.register_registration(registration)

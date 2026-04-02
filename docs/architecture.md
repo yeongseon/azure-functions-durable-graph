@@ -1,6 +1,6 @@
 # Architecture
 
-`azure-functions-langgraph` compiles graph-shaped workflows into Azure Functions
+`azure-functions-durable-graph` compiles graph-shaped workflows into Azure Functions
 applications that run on Durable Functions without violating orchestrator determinism.
 
 ## Design principles
@@ -85,7 +85,7 @@ while True:
 
   if decision.action == "wait_for_event":
     event_payload = wait_for_external_event(decision.event_name)
-    state = call apply_event(graph_name, decision.event_handler_name, state, event_payload)
+    state = call apply_event(graph_name, decision.event_name, state, event_payload)
     node = decision.resume_node
     continue
 
@@ -168,14 +168,13 @@ flowchart LR
 - Authentication and authorization
 - Business/domain logic inside node handlers
 - Data persistence beyond Durable Functions state
-- Automatic LangGraph translation (future roadmap)
 
 ## Why a manifest exists
 
 A manifest gives the runtime a stable, versioned intermediate representation:
 
 - graph name and version
-- topology hash for change detection
+- manifest-derived hash for change detection
 - state model identity
 - entrypoint and node definitions
 - handler name references

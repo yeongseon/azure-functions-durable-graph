@@ -4,7 +4,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from azure_functions_langgraph import ManifestBuilder, RouteDecision
+from azure_functions_durable_graph import ManifestBuilder, RouteDecision
 
 
 class SupportState(BaseModel):
@@ -36,7 +36,6 @@ def route_after_classify(state: SupportState) -> RouteDecision:
         return RouteDecision.wait_for_event(
             event_name="approval",
             resume_node="draft_reply",
-            event_handler_name="approval",
             note="awaiting human approval",
         )
     return RouteDecision.next("draft_reply")

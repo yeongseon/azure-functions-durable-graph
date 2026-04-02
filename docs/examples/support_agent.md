@@ -65,7 +65,6 @@ def route_after_classify(state: SupportState) -> RouteDecision:
         return RouteDecision.wait_for_event(
             event_name="approval",
             resume_node="draft_reply",
-            event_handler_name="approval",
             note="awaiting human approval",
         )
     return RouteDecision.next("draft_reply")
@@ -92,7 +91,7 @@ def finalize_reply(state: SupportState) -> dict:
 ## Graph Definition
 
 ```python
-from azure_functions_langgraph import ManifestBuilder
+from azure_functions_durable_graph import ManifestBuilder
 
 builder = ManifestBuilder(
     graph_name="support_agent",
@@ -114,7 +113,7 @@ registration = builder.build()
 Wire it into your `function_app.py`:
 
 ```python
-from azure_functions_langgraph import DurableGraphApp
+from azure_functions_durable_graph import DurableGraphApp
 from examples.support_agent.graph import registration
 
 runtime = DurableGraphApp()

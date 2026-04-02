@@ -8,7 +8,7 @@ to configure graph definitions.
 `ManifestBuilder` is the primary API for declaring graph topologies.
 
 ```python
-from azure_functions_langgraph import ManifestBuilder
+from azure_functions_durable_graph import ManifestBuilder
 
 builder = ManifestBuilder(
     graph_name="my_graph",
@@ -85,7 +85,7 @@ registration = builder.build()
 The build step:
 
 1. Validates that an entrypoint is set and references a registered node.
-2. Computes a topology hash from the canonical JSON of the graph structure.
+2. Computes a manifest-derived hash from the canonical JSON of the graph structure.
 3. Returns a `GraphRegistration` containing the manifest and all handler references.
 
 ## DurableGraphApp
@@ -93,7 +93,7 @@ The build step:
 `DurableGraphApp` wires graph registrations into Azure Functions.
 
 ```python
-from azure_functions_langgraph import DurableGraphApp
+from azure_functions_durable_graph import DurableGraphApp
 
 runtime = DurableGraphApp(auth_level=func.AuthLevel.ANONYMOUS)
 runtime.register_registration(registration)
@@ -148,7 +148,6 @@ def my_route(state: MyState) -> RouteDecision:
         return RouteDecision.wait_for_event(
             event_name="approval",
             resume_node="process",
-            event_handler_name="approval",
         )
     return RouteDecision.next("process")
 ```

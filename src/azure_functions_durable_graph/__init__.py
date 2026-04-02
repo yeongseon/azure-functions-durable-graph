@@ -1,4 +1,4 @@
-"""azure-functions-langgraph package."""
+"""azure-functions-durable-graph package."""
 
 from __future__ import annotations
 
@@ -29,6 +29,9 @@ def __getattr__(name: str) -> object:
             from .app import DurableGraphApp as _cls
 
             return _cls
-        except (ImportError, ModuleNotFoundError):  # pragma: no cover
-            return None
+        except (ImportError, ModuleNotFoundError) as exc:  # pragma: no cover
+            raise ImportError(
+                "DurableGraphApp requires 'azure-functions' and 'azure-functions-durable'. "
+                "Install them with: pip install azure-functions azure-functions-durable"
+            ) from exc
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

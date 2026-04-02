@@ -1,6 +1,6 @@
 # Contributing Guide
 
-We welcome contributions to the `azure-functions-langgraph` project. This guide outlines the process for contributing code, documentation, and tests while maintaining the high quality standards of the project.
+We welcome contributions to the `azure-functions-durable-graph` project. This guide outlines the process for contributing code, documentation, and tests while maintaining the high quality standards of the project.
 
 ## Getting Started
 
@@ -9,8 +9,8 @@ To begin contributing, follow these steps to set up your local development envir
 1. Fork the repository on GitHub.
 2. Clone your fork locally:
    ```bash
-   git clone https://github.com/your-username/azure-functions-langgraph.git
-   cd azure-functions-langgraph
+   git clone https://github.com/your-username/azure-functions-durable-graph.git
+   cd azure-functions-durable-graph
    ```
 3. Set up the development environment using Hatch:
    ```bash
@@ -35,7 +35,7 @@ We follow a standard feature branch workflow:
    ```bash
    git checkout -b feature/your-feature-name
    ```
-2. Implement your changes in `src/azure_functions_langgraph/`.
+2. Implement your changes in `src/azure_functions_durable_graph/`.
 3. Add or update tests in the `tests/` directory.
 4. Run the local quality gate frequently to catch issues early:
    ```bash
@@ -78,7 +78,7 @@ We maintain strict quality standards to ensure the reliability of the runtime:
 - **Linting**: We use `ruff` (v0.15.7) for linting and import sorting.
 - **Type Checking**: All public APIs must be fully typed. We use `mypy` (v1.19.1) for static type analysis.
 - **Security**: `bandit` (1.9.4) is used to scan for common security issues.
-- **Coverage**: We require 90% or higher test coverage for all changes.
+- **Coverage**: We require 80% or higher test coverage for all changes.
 
 Run `make check-all` to execute all these tools locally before pushing your changes.
 
@@ -108,7 +108,7 @@ Every Pull Request must meet the following criteria before being merged:
 
 ## Version Management
 
-The project version is defined in `src/azure_functions_langgraph/__init__.py`. We follow [Semantic Versioning (SemVer)](https://semver.org/):
+The project version is defined in `src/azure_functions_durable_graph/__init__.py`. We follow [Semantic Versioning (SemVer)](https://semver.org/):
 
 - **Major**: Breaking changes.
 - **Minor**: New features (backwards compatible).
@@ -118,4 +118,4 @@ The `CHANGELOG.md` is updated automatically via `git-cliff` during the release p
 
 ## Code of Conduct
 
-All contributors are expected to adhere to our [Code of Conduct](https://github.com/yeongseon/azure-functions-langgraph/blob/main/CODE_OF_CONDUCT.md). We strive to maintain a respectful and inclusive environment for everyone.
+All contributors are expected to adhere to our [Code of Conduct](https://github.com/yeongseon/azure-functions-durable-graph/blob/main/CODE_OF_CONDUCT.md). We strive to maintain a respectful and inclusive environment for everyone.

@@ -32,10 +32,10 @@ class DurableGraphApp:
         self.blueprint = df.Blueprint()
         self.registry = GraphRegistry()
 
-        self._orchestrator_name = "aflg_orchestrator"
-        self._node_activity_name = "aflg_execute_node"
-        self._route_activity_name = "aflg_resolve_route"
-        self._event_activity_name = "aflg_apply_event"
+        self._orchestrator_name = "afdg_orchestrator"
+        self._node_activity_name = "afdg_execute_node"
+        self._route_activity_name = "afdg_resolve_route"
+        self._event_activity_name = "afdg_apply_event"
 
         self._register_runtime_functions()
         self.function_app.register_functions(self.blueprint)
@@ -164,9 +164,13 @@ class DurableGraphApp:
             return _json_response({"ok": True, "registered_graphs": self.registry.list_manifests()})
 
         @self.blueprint.orchestration_trigger(context_name="context")  # type: ignore[untyped-decorator]
-        def aflg_orchestrator(context: df.DurableOrchestrationContext) -> Any:
+        def afdg_orchestrator(context: df.DurableOrchestrationContext) -> Any:
             request = OrchestrationInput.model_validate(context.get_input())
-            manifest = self.registry.manifest(request.graph_name)
+            registration = self.registry.registration_by_hash(
+                request.graph_name,
+                request.graph_hash,
+            )
+            manifest = registration.manifest
 
             current_node = request.current_node or manifest.entrypoint
             state: dict[str, Any] = request.initial_state
@@ -242,7 +246,7 @@ class DurableGraphApp:
                 current_node = decision.next_node
 
         @self.blueprint.activity_trigger(input_name="payload")  # type: ignore[untyped-decorator]
-        async def aflg_execute_node(payload: dict[str, Any]) -> dict[str, Any]:
+        async def afdg_execute_node(payload: dict[str, Any]) -> dict[str, Any]:
             request = NodeExecutionRequest.model_validate(payload)
             try:
                 return await self.registry.execute_node(
@@ -261,7 +265,7 @@ class DurableGraphApp:
                 raise
 
         @self.blueprint.activity_trigger(input_name="payload")  # type: ignore[untyped-decorator]
-        async def aflg_resolve_route(payload: dict[str, Any]) -> dict[str, Any]:
+        async def afdg_resolve_route(payload: dict[str, Any]) -> dict[str, Any]:
             request = RouteResolutionRequest.model_validate(payload)
             try:
                 return await self.registry.resolve_route(
@@ -280,7 +284,7 @@ class DurableGraphApp:
                 raise
 
         @self.blueprint.activity_trigger(input_name="payload")  # type: ignore[untyped-decorator]
-        async def aflg_apply_event(payload: dict[str, Any]) -> dict[str, Any]:
+        async def afdg_apply_event(payload: dict[str, Any]) -> dict[str, Any]:
             request = EventApplyRequest.model_validate(payload)
             try:
                 return await self.registry.apply_event(
@@ -303,7 +307,7 @@ class DurableGraphApp:
         return {
             "openapi": "3.0.3",
             "info": {
-                "title": "azure-functions-langgraph runtime",
+                "title": "azure-functions-durable-graph runtime",
                 "version": "0.1.0a0",
             },
             "paths": {
@@ -372,7 +376,7 @@ class DurableGraphApp:
                     "RegisteredGraphs": {
                         "type": "array",
                         "items": {"type": "object"},
-                        "x-aflg-graphs": self.registry.list_manifests(),
+                        "x-afdg-graphs": self.registry.list_manifests(),
                     }
                 }
             },

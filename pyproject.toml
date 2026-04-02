@@ -1,7 +1,7 @@
 [project]
-name = "azure-functions-langgraph"
-description = "LangGraph runtime for Azure Functions with Durable Functions orchestration"
-keywords = ["azure-functions", "azure", "python", "langgraph", "langchain", "durable-functions", "orchestration", "serverless"]
+name = "azure-functions-durable-graph"
+description = "Manifest-first graph runtime for Azure Functions with Durable Functions orchestration"
+keywords = ["azure-functions", "azure", "python", "durable-functions", "graph", "orchestration", "serverless", "workflow"]
 authors = [{ name = "Yeongseon Choe", email = "yeongseon.choe@gmail.com" }]
 license = { text = "MIT" }
 readme = "README.md"
@@ -30,16 +30,12 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://yeongseon.github.io/azure-functions-langgraph/"
-Documentation = "https://yeongseon.github.io/azure-functions-langgraph/"
-Repository = "https://github.com/yeongseon/azure-functions-langgraph"
-Issues = "https://github.com/yeongseon/azure-functions-langgraph/issues"
+Homepage = "https://yeongseon.github.io/azure-functions-durable-graph/"
+Documentation = "https://yeongseon.github.io/azure-functions-durable-graph/"
+Repository = "https://github.com/yeongseon/azure-functions-durable-graph"
+Issues = "https://github.com/yeongseon/azure-functions-durable-graph/issues"
 
 [project.optional-dependencies]
-langgraph = [
-    "langgraph>=1,<2",
-    "langchain-core>=1,<2",
-]
 dev = [
     "bandit==1.9.4",
     "build",
@@ -71,7 +67,7 @@ sources = ["src"]
 [tool.hatch.build.targets.wheel]
 
 [tool.hatch.version]
-path = "src/azure_functions_langgraph/__init__.py"
+path = "src/azure_functions_durable_graph/__init__.py"
 
 [tool.hatch.publish.index]
 default = "pypi"
@@ -108,7 +104,7 @@ select = ["E", "F", "I"]
 fixable = ["ALL"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["azure_functions_langgraph"]
+known-first-party = ["azure_functions_durable_graph"]
 force-sort-within-sections = true
 section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
 
@@ -121,17 +117,17 @@ show_error_codes = true
 pretty = true
 
 [tool.pytest.ini_options]
-addopts = "--cov=src/azure_functions_langgraph --cov-report=xml --cov-report=term-missing -ra -q -m 'not e2e'"
+addopts = "--cov=src/azure_functions_durable_graph --cov-report=xml --cov-report=term-missing -ra -q -m 'not e2e'"
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 asyncio_mode = "auto"
 markers = ["e2e: real Azure end-to-end tests (require E2E_BASE_URL)"]
 
 [tool.coverage.run]
 branch = true
-source = ["src/azure_functions_langgraph"]
+source = ["src/azure_functions_durable_graph"]
 omit = [
-    "src/azure_functions_langgraph/adapters/*",
+    "src/azure_functions_durable_graph/adapters/*",
 ]
 
 [tool.coverage.report]
@@ -139,7 +135,7 @@ show_missing = true
 fail_under = 80
 skip_covered = true
 omit = [
-    "src/azure_functions_langgraph/adapters/*",
+    "src/azure_functions_durable_graph/adapters/*",
 ]
 
 [tool.bandit]

@@ -9,8 +9,8 @@ from unittest.mock import MagicMock, patch
 from pydantic import BaseModel
 import pytest
 
-from azure_functions_langgraph import ManifestBuilder, RouteDecision
-from azure_functions_langgraph.contracts import (
+from azure_functions_durable_graph import ManifestBuilder, RouteDecision
+from azure_functions_durable_graph.contracts import (
     EventApplyRequest,
     NodeExecutionRequest,
     OrchestrationInput,
@@ -78,7 +78,7 @@ def _import_app() -> Any:
         # Force re-import so the mocks are used
         import importlib
 
-        import azure_functions_langgraph.app as app_mod
+        import azure_functions_durable_graph.app as app_mod
 
         importlib.reload(app_mod)
         return app_mod
@@ -239,7 +239,7 @@ class TestRegistryHashLookup:
     """Test GraphRegistry.registration_by_hash and composite keying."""
 
     def test_registration_by_hash_succeeds(self) -> None:
-        from azure_functions_langgraph.registry import GraphRegistry
+        from azure_functions_durable_graph.registry import GraphRegistry
 
         registration = _build_registration()
         reg = GraphRegistry()
@@ -249,7 +249,7 @@ class TestRegistryHashLookup:
         assert found is registration
 
     def test_registration_by_hash_unknown_hash_raises(self) -> None:
-        from azure_functions_langgraph.registry import GraphRegistry
+        from azure_functions_durable_graph.registry import GraphRegistry
 
         registration = _build_registration()
         reg = GraphRegistry()
@@ -258,7 +258,7 @@ class TestRegistryHashLookup:
             reg.registration_by_hash("demo", "bad_hash")
 
     def test_registration_by_hash_unknown_name_raises(self) -> None:
-        from azure_functions_langgraph.registry import GraphRegistry
+        from azure_functions_durable_graph.registry import GraphRegistry
 
         registration = _build_registration()
         reg = GraphRegistry()
@@ -267,7 +267,7 @@ class TestRegistryHashLookup:
             reg.registration_by_hash("nonexistent", registration.manifest.graph_hash)
 
     def test_duplicate_registration_same_hash_raises(self) -> None:
-        from azure_functions_langgraph.registry import GraphRegistry
+        from azure_functions_durable_graph.registry import GraphRegistry
 
         registration = _build_registration()
         reg = GraphRegistry()
@@ -276,7 +276,7 @@ class TestRegistryHashLookup:
             reg.register(registration)
 
     def test_list_manifests_after_register(self) -> None:
-        from azure_functions_langgraph.registry import GraphRegistry
+        from azure_functions_durable_graph.registry import GraphRegistry
 
         reg = GraphRegistry()
         reg.register(_build_registration())
@@ -285,7 +285,7 @@ class TestRegistryHashLookup:
         assert "graph_hash" in manifests[0]
 
     def test_manifest_shortcut(self) -> None:
-        from azure_functions_langgraph.registry import GraphRegistry
+        from azure_functions_durable_graph.registry import GraphRegistry
 
         reg = GraphRegistry()
         registration = _build_registration()
@@ -294,7 +294,7 @@ class TestRegistryHashLookup:
         assert manifest.graph_name == "demo"
 
     def test_manifest_unknown_graph_raises(self) -> None:
-        from azure_functions_langgraph.registry import GraphRegistry
+        from azure_functions_durable_graph.registry import GraphRegistry
 
         reg = GraphRegistry()
         with pytest.raises(KeyError, match="unknown graph"):
@@ -309,7 +309,7 @@ class TestRegistryAsyncOps:
 
     @pytest.fixture()
     def registry_and_hash(self) -> tuple[Any, str]:
-        from azure_functions_langgraph.registry import GraphRegistry
+        from azure_functions_durable_graph.registry import GraphRegistry
 
         registration = _build_registration()
         reg = GraphRegistry()
@@ -344,7 +344,7 @@ class TestRegistryEdgeCases:
 
     @pytest.mark.asyncio
     async def test_resolve_route_terminal_node(self) -> None:
-        from azure_functions_langgraph.registry import GraphRegistry
+        from azure_functions_durable_graph.registry import GraphRegistry
 
         builder = ManifestBuilder(graph_name="t", state_model=DemoState, version="1")
         builder.set_entrypoint("end")
@@ -359,7 +359,7 @@ class TestRegistryEdgeCases:
 
     @pytest.mark.asyncio
     async def test_resolve_route_next_node_static(self) -> None:
-        from azure_functions_langgraph.registry import GraphRegistry
+        from azure_functions_durable_graph.registry import GraphRegistry
 
         builder = ManifestBuilder(graph_name="s", state_model=DemoState, version="1")
         builder.set_entrypoint("a")
@@ -375,7 +375,7 @@ class TestRegistryEdgeCases:
     @pytest.mark.asyncio
     async def test_resolve_route_implicit_completion(self) -> None:
         """Node with no next_node, no route, not terminal → implicit complete."""
-        from azure_functions_langgraph.registry import GraphRegistry
+        from azure_functions_durable_graph.registry import GraphRegistry
 
         builder = ManifestBuilder(graph_name="ic", state_model=DemoState, version="1")
         builder.set_entrypoint("solo")
@@ -392,7 +392,7 @@ class TestRegistryEdgeCases:
 
     @pytest.mark.asyncio
     async def test_apply_event_unknown_handler_raises(self) -> None:
-        from azure_functions_langgraph.registry import GraphRegistry
+        from azure_functions_durable_graph.registry import GraphRegistry
 
         registration = _build_registration()
         reg = GraphRegistry()
@@ -408,7 +408,7 @@ class TestRegistryEdgeCases:
 
     @pytest.mark.asyncio
     async def test_apply_event_success(self) -> None:
-        from azure_functions_langgraph.registry import GraphRegistry
+        from azure_functions_durable_graph.registry import GraphRegistry
 
         class S(BaseModel):
             x: int = 0
@@ -431,7 +431,7 @@ class TestRegistryEdgeCases:
     @pytest.mark.asyncio
     async def test_execute_node_with_none_result(self) -> None:
         """Node handler returning None should leave state unchanged."""
-        from azure_functions_langgraph.registry import GraphRegistry
+        from azure_functions_durable_graph.registry import GraphRegistry
 
         def noop(state: DemoState) -> None:
             pass
@@ -448,7 +448,7 @@ class TestRegistryEdgeCases:
     @pytest.mark.asyncio
     async def test_execute_node_with_model_result(self) -> None:
         """Node handler returning a BaseModel should merge correctly."""
-        from azure_functions_langgraph.registry import GraphRegistry
+        from azure_functions_durable_graph.registry import GraphRegistry
 
         def model_handler(state: DemoState) -> DemoState:
             return DemoState(value=state.value * 2)
@@ -470,7 +470,7 @@ class TestNormalizeRouteDecision:
     """Cover all branches of _normalize_route_decision."""
 
     def _make_node(self, *, next_node: str | None = None, terminal: bool = False) -> Any:
-        from azure_functions_langgraph.manifest import NodeDefinition
+        from azure_functions_durable_graph.manifest import NodeDefinition
 
         return NodeDefinition(
             name="test",
@@ -480,7 +480,7 @@ class TestNormalizeRouteDecision:
         )
 
     def test_none_with_next_node(self) -> None:
-        from azure_functions_langgraph.registry import _normalize_route_decision
+        from azure_functions_durable_graph.registry import _normalize_route_decision
 
         node = self._make_node(next_node="b")
         result = _normalize_route_decision(node=node, raw=None)
@@ -488,14 +488,14 @@ class TestNormalizeRouteDecision:
         assert result.next_node == "b"
 
     def test_none_without_next_node(self) -> None:
-        from azure_functions_langgraph.registry import _normalize_route_decision
+        from azure_functions_durable_graph.registry import _normalize_route_decision
 
         node = self._make_node()
         result = _normalize_route_decision(node=node, raw=None)
         assert result.action == RouteAction.COMPLETE
 
     def test_route_decision_passthrough(self) -> None:
-        from azure_functions_langgraph.registry import _normalize_route_decision
+        from azure_functions_durable_graph.registry import _normalize_route_decision
 
         node = self._make_node()
         decision = RouteDecision.complete(note="done")
@@ -503,7 +503,7 @@ class TestNormalizeRouteDecision:
         assert result is decision
 
     def test_string_next(self) -> None:
-        from azure_functions_langgraph.registry import _normalize_route_decision
+        from azure_functions_durable_graph.registry import _normalize_route_decision
 
         node = self._make_node()
         result = _normalize_route_decision(node=node, raw="step_b")
@@ -511,14 +511,14 @@ class TestNormalizeRouteDecision:
         assert result.next_node == "step_b"
 
     def test_string_complete(self) -> None:
-        from azure_functions_langgraph.registry import _normalize_route_decision
+        from azure_functions_durable_graph.registry import _normalize_route_decision
 
         node = self._make_node()
         result = _normalize_route_decision(node=node, raw="__complete__")
         assert result.action == RouteAction.COMPLETE
 
     def test_dict_decision(self) -> None:
-        from azure_functions_langgraph.registry import _normalize_route_decision
+        from azure_functions_durable_graph.registry import _normalize_route_decision
 
         node = self._make_node()
         result = _normalize_route_decision(node=node, raw={"action": "next", "next_node": "c"})
@@ -526,7 +526,7 @@ class TestNormalizeRouteDecision:
         assert result.next_node == "c"
 
     def test_unsupported_type_raises(self) -> None:
-        from azure_functions_langgraph.registry import _normalize_route_decision
+        from azure_functions_durable_graph.registry import _normalize_route_decision
 
         node = self._make_node()
         with pytest.raises(TypeError, match="unsupported route decision"):
@@ -540,7 +540,7 @@ class TestMergeState:
     """Cover the TypeError branch in _merge_state."""
 
     def test_unsupported_type_raises(self) -> None:
-        from azure_functions_langgraph.registry import _merge_state
+        from azure_functions_durable_graph.registry import _merge_state
 
         state = DemoState(value=1)
         with pytest.raises(TypeError, match="unsupported state merge"):
@@ -554,7 +554,7 @@ class TestCallableName:
     """Test _callable_name uses module.qualname."""
 
     def test_regular_function(self) -> None:
-        from azure_functions_langgraph.manifest import _callable_name
+        from azure_functions_durable_graph.manifest import _callable_name
 
         name = _callable_name(increment)
         # Should contain module and qualname
@@ -562,14 +562,14 @@ class TestCallableName:
         assert "." in name
 
     def test_lambda(self) -> None:
-        from azure_functions_langgraph.manifest import _callable_name
+        from azure_functions_durable_graph.manifest import _callable_name
 
         fn = lambda x: x  # noqa: E731
         name = _callable_name(fn)
         assert "<lambda>" in name
 
     def test_none_raises(self) -> None:
-        from azure_functions_langgraph.manifest import _callable_name
+        from azure_functions_durable_graph.manifest import _callable_name
 
         with pytest.raises(ValueError, match="callable cannot be None"):
             _callable_name(None)
@@ -582,7 +582,7 @@ class TestNodeDefinitionValidation:
     """Test model_validator on NodeDefinition."""
 
     def test_terminal_with_next_node_raises(self) -> None:
-        from azure_functions_langgraph.manifest import NodeDefinition
+        from azure_functions_durable_graph.manifest import NodeDefinition
 
         with pytest.raises(ValueError, match="terminal nodes cannot"):
             NodeDefinition(
@@ -593,7 +593,7 @@ class TestNodeDefinitionValidation:
             )
 
     def test_terminal_with_route_raises(self) -> None:
-        from azure_functions_langgraph.manifest import NodeDefinition
+        from azure_functions_durable_graph.manifest import NodeDefinition
 
         with pytest.raises(ValueError, match="terminal nodes cannot"):
             NodeDefinition(
@@ -737,7 +737,7 @@ class TestRouteTargetValidation:
     @pytest.mark.asyncio
     async def test_resolve_route_unknown_next_node(self) -> None:
         """Dynamic route returning unknown node name raises ValueError."""
-        from azure_functions_langgraph.registry import GraphRegistry
+        from azure_functions_durable_graph.registry import GraphRegistry
 
         def bad_router(state: DemoState) -> RouteDecision:
             # Returns a node name that doesn't exist in the manifest
@@ -758,7 +758,7 @@ class TestRouteTargetValidation:
     @pytest.mark.asyncio
     async def test_resolve_route_unknown_resume_node(self) -> None:
         """Route returning wait_for_event with unknown resume_node raises ValueError."""
-        from azure_functions_langgraph.registry import GraphRegistry
+        from azure_functions_durable_graph.registry import GraphRegistry
 
         def event_router(state: DemoState) -> RouteDecision:
             return RouteDecision.wait_for_event(event_name="approval", resume_node="does_not_exist")

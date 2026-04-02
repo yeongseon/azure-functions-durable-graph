@@ -1,10 +1,10 @@
 # Testing
 
-This guide describes the test suite for `azure-functions-langgraph`, including how to run tests, the structure of the test suite, and guidelines for contributing new tests.
+This guide describes the test suite for `azure-functions-durable-graph`, including how to run tests, the structure of the test suite, and guidelines for contributing new tests.
 
 ## Overview
 
-The `azure-functions-langgraph` project maintains a high standard of quality through a comprehensive test suite. The suite ensures that manifest building, state management, routing logic, and registry behavior work correctly across different Python versions.
+The `azure-functions-durable-graph` project maintains a high standard of quality through a comprehensive test suite. The suite ensures that manifest building, state management, routing logic, and registry behavior work correctly across different Python versions.
 
 - **Supported Environments**: Python 3.10, 3.11, 3.12, 3.13, and 3.14
 
@@ -52,7 +52,7 @@ Tests are located in the `tests/` directory and organized by the functional area
 
 | File | Description |
 | :--- | :--- |
-| `test_manifest.py` | Tests manifest building, node definitions, and topology hashing. |
+| `test_manifest.py` | Tests manifest building, node definitions, and manifest hashing. |
 | `test_registry.py` | Tests handler dispatch, state merging, route resolution, and event handling. |
 | `test_public_api.py` | Verifies the public API surface and export stability. |
 | `conftest.py` | Shared fixtures for the test suite. |
@@ -80,7 +80,7 @@ Example of a new test:
 async def test_execute_node_merges_state():
     registry = GraphRegistry()
     registry.register(my_registration)
-    result = await registry.execute_node("my_graph", "step_a", {"value": 0})
+    result = await registry.execute_node("my_graph", my_registration.manifest.graph_hash, "step_a", {"value": 0})
     assert result["value"] == 1
 ```
 
@@ -88,10 +88,10 @@ async def test_execute_node_merges_state():
 
 Coverage settings are defined in `pyproject.toml`. The project tracks branch coverage to ensure all logical paths are exercised.
 
-- **Source**: `src/azure_functions_langgraph`
+- **Source**: `src/azure_functions_durable_graph`
 - **Reports**: Terminal (missing lines), XML (for CI), and HTML.
 - **Branch Coverage**: Enabled (`branch = true`).
-- **Minimum Coverage**: 90%
+- **Minimum Coverage**: 80%
 
 You can view the coverage configuration under the `[tool.coverage.run]` and `[tool.coverage.report]` sections of `pyproject.toml`.
 

@@ -1,6 +1,6 @@
 # Usage
 
-This guide covers production patterns for `azure-functions-langgraph` in the Azure
+This guide covers production patterns for `azure-functions-durable-graph` in the Azure
 Functions Python v2 programming model with Durable Functions.
 
 If you are new to the package, start with [Quickstart](getting-started.md) and
@@ -11,7 +11,7 @@ then return here for deeper patterns.
 ```python
 from pydantic import BaseModel
 
-from azure_functions_langgraph import DurableGraphApp, ManifestBuilder
+from azure_functions_durable_graph import DurableGraphApp, ManifestBuilder
 
 
 class OrderState(BaseModel):
@@ -58,7 +58,7 @@ builder.add_node("c", handler_c, terminal=True)
 Use a route handler to pick the next node dynamically:
 
 ```python
-from azure_functions_langgraph import RouteDecision
+from azure_functions_durable_graph import RouteDecision
 
 
 def route_after_classify(state: TicketState) -> RouteDecision:
@@ -95,7 +95,6 @@ def route_after_review(state: ReviewState) -> RouteDecision:
         return RouteDecision.wait_for_event(
             event_name="manager_approval",
             resume_node="apply_decision",
-            event_handler_name="merge_approval",
         )
     return RouteDecision.next("apply_decision")
 
@@ -173,8 +172,9 @@ curl -X POST http://localhost:7071/api/runs/{instance_id}/cancel \
 
 ## Graph versioning
 
-The manifest includes a `graph_hash` derived from the canonical JSON of the topology.
-This hash changes when nodes, edges, or event handlers change, enabling safe
+The manifest includes a `graph_hash` derived from the canonical JSON of the full
+manifest (graph name, version, state model, nodes, edges, event handlers, and metadata).
+This hash changes when any part of the manifest changes, enabling safe
 side-by-side deployments.
 
 ```python
@@ -190,7 +190,7 @@ Test your graph logic without Azure Functions infrastructure:
 import pytest
 from pydantic import BaseModel
 
-from azure_functions_langgraph import ManifestBuilder
+from azure_functions_durable_graph import ManifestBuilder
 
 
 class State(BaseModel):
@@ -228,4 +228,6 @@ See [Troubleshooting](troubleshooting.md) for issue-by-issue fixes.
 - [API Reference](api.md)
 - [Architecture](architecture.md)
 - [FAQ](faq.md)
+- [Data Pipeline Example](examples/data_pipeline.md)
+- [Content Classifier Example](examples/content_classifier.md)
 - [Support Agent Example](examples/support_agent.md)

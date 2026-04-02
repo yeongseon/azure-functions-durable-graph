@@ -1,4 +1,4 @@
-from azure_functions_langgraph import DurableGraphApp
+from azure_functions_durable_graph import DurableGraphApp
 from examples.support_agent.graph import registration
 
 runtime = DurableGraphApp()

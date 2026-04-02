@@ -1,6 +1,6 @@
 # Installation
 
-`azure-functions-langgraph` targets the **Azure Functions Python v2 programming model** with **Durable Functions** orchestration.
+`azure-functions-durable-graph` targets the **Azure Functions Python v2 programming model** with **Durable Functions** orchestration.
 
 ## Requirements
 
@@ -19,7 +19,6 @@
 | Pydantic | v2 (`>=2.0,<3.0`) | State models should inherit from `pydantic.BaseModel`. |
 | `azure-functions` | Required | Use with Python v2 decorator-based `FunctionApp`. |
 | `azure-functions-durable` | Required | Provides Durable Functions orchestration primitives. |
-| `langgraph` (optional) | `>=1,<2` | Install via `pip install azure-functions-langgraph[langgraph]`. |
 
 Compatibility expectations:
 
@@ -30,7 +29,7 @@ Compatibility expectations:
 ## From PyPI
 
 ```bash
-pip install azure-functions-langgraph
+pip install azure-functions-durable-graph
 ```
 
 Ensure your Function App dependencies include:
@@ -38,15 +37,7 @@ Ensure your Function App dependencies include:
 ```text
 azure-functions
 azure-functions-durable
-azure-functions-langgraph
-```
-
-### Optional LangGraph dependency
-
-If you plan to use the LangGraph adapter (future):
-
-```bash
-pip install azure-functions-langgraph[langgraph]
+azure-functions-durable-graph
 ```
 
 If you pin dependencies, keep `pydantic` in the v2 major version.
@@ -56,7 +47,7 @@ If you pin dependencies, keep `pydantic` in the v2 major version.
 Run the following command after installation:
 
 ```bash
-python -c "import azure_functions_langgraph; print(azure_functions_langgraph.__version__)"
+python -c "import azure_functions_durable_graph; print(azure_functions_durable_graph.__version__)"
 ```
 
 Expected outcome:
@@ -67,7 +58,7 @@ Expected outcome:
 You can also verify package metadata from your environment:
 
 ```bash
-pip show azure-functions-langgraph
+pip show azure-functions-durable-graph
 ```
 
 Check that your active environment is the same one used by your Function App.
@@ -75,8 +66,8 @@ Check that your active environment is the same one used by your Function App.
 ## Local Development
 
 ```bash
-git clone https://github.com/yeongseon/azure-functions-langgraph.git
-cd azure-functions-langgraph
+git clone https://github.com/yeongseon/azure-functions-durable-graph.git
+cd azure-functions-durable-graph
 make install
 ```
 
@@ -87,7 +78,7 @@ All project maintenance commands should go through the Makefile.
 Upgrade to the latest published version:
 
 ```bash
-pip install --upgrade azure-functions-langgraph
+pip install --upgrade azure-functions-durable-graph
 ```
 
 Recommended upgrade workflow:
@@ -95,17 +86,17 @@ Recommended upgrade workflow:
 1. Upgrade in a dedicated virtual environment.
 2. Reinstall or confirm compatible `azure-functions`, `azure-functions-durable`, and Pydantic v2 versions.
 3. Run your local Azure Functions smoke tests.
-4. Confirm graph manifests still match your expected topology hashes.
+4. Confirm graph manifests still match your expected manifest hashes.
 
 For deterministic deployments, pin an explicit version in your dependency file.
 
 ## Troubleshooting
 
-### ImportError: No module named `azure_functions_langgraph`
+### ImportError: No module named `azure_functions_durable_graph`
 
 - Confirm installation ran in the correct environment.
-- Run `python -m pip install azure-functions-langgraph`.
-- Verify with `python -c "import azure_functions_langgraph"`.
+- Run `python -m pip install azure-functions-durable-graph`.
+- Verify with `python -c "import azure_functions_durable_graph"`.
 
 ### Pydantic version mismatch
 

@@ -1,12 +1,12 @@
-"""Tests for the public API surface of azure-functions-langgraph v0.1."""
+"""Tests for the public API surface of azure-functions-durable-graph v0.1."""
 
 from typing import Any
 
 from pydantic import BaseModel
 import pytest
 
-import azure_functions_langgraph
-from azure_functions_langgraph import (
+import azure_functions_durable_graph
+from azure_functions_durable_graph import (
     GraphManifest,
     GraphRegistration,
     ManifestBuilder,
@@ -23,7 +23,7 @@ class TestAPISurface:
     """Verify __all__ matches exactly the declared public names + __version__."""
 
     def test_all_exports(self) -> None:
-        assert set(azure_functions_langgraph.__all__) == {
+        assert set(azure_functions_durable_graph.__all__) == {
             "__version__",
             "DurableGraphApp",
             "GraphManifest",
@@ -34,7 +34,7 @@ class TestAPISurface:
         }
 
     def test_version_is_0_1_0a0(self) -> None:
-        assert azure_functions_langgraph.__version__ == "0.1.0a0"
+        assert azure_functions_durable_graph.__version__ == "0.1.0a0"
 
     def test_manifest_builder_is_class(self) -> None:
         assert isinstance(ManifestBuilder, type)
@@ -57,7 +57,7 @@ class TestAPISurface:
     def test_durable_graph_app_importable(self) -> None:
         # DurableGraphApp may be None in pure unit test environments
         # without Azure packages, but it must be in __all__
-        assert "DurableGraphApp" in azure_functions_langgraph.__all__
+        assert "DurableGraphApp" in azure_functions_durable_graph.__all__
 
 
 # ---------------------------------------------------------------------------

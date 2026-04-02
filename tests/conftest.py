@@ -1,1 +1,1 @@
-"""Test configuration for azure-functions-langgraph."""
+"""Test configuration for azure-functions-durable-graph."""

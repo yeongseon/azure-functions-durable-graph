@@ -1,6 +1,6 @@
 # Development Guide
 
-This guide covers how to set up a local development environment, run tests, and manage code quality for **azure-functions-langgraph**, using Hatch and a Makefile for workflow automation.
+This guide covers how to set up a local development environment, run tests, and manage code quality for **azure-functions-durable-graph**, using Hatch and a Makefile for workflow automation.
 
 ---
 
@@ -17,17 +17,16 @@ This guide covers how to set up a local development environment, run tests, and 
 ## Project Structure
 
 ```text
-azure-functions-langgraph/
+azure-functions-durable-graph/
 ├── src/
-│   └── azure_functions_langgraph/
+│   └── azure_functions_durable_graph/
 │       ├── __init__.py
 │       ├── app.py
 │       ├── contracts.py
 │       ├── manifest.py
 │       ├── registry.py
 │       └── adapters/
-│           ├── __init__.py
-│           └── langgraph.py
+│           └── __init__.py
 ├── tests/
 ├── examples/
 ├── docs/
@@ -44,7 +43,7 @@ azure-functions-langgraph/
 - **`Makefile`** — common commands for environment setup, testing, linting, releasing, and publishing.
 - **`pyproject.toml`** — Hatch environments, project metadata, and tool configuration.
 - **`cliff.toml`** — git-cliff configuration for changelog generation from conventional commits.
-- **`src/azure_functions_langgraph/`** — core library code.
+- **`src/azure_functions_durable_graph/`** — core library code.
 - **`tests/`** — unit and integration tests.
 - **`docs/`** — documentation files served by MkDocs.
 
@@ -54,8 +53,8 @@ azure-functions-langgraph/
 
 1. **Clone the repository**:
     ```bash
-    git clone https://github.com/yeongseon/azure-functions-langgraph.git
-    cd azure-functions-langgraph
+    git clone https://github.com/yeongseon/azure-functions-durable-graph.git
+    cd azure-functions-durable-graph
     ```
 
 2. **Create environment and install dependencies**:
@@ -95,7 +94,7 @@ make precommit
     git checkout -b feature/your-description
     ```
 
-2. **Implement changes** in `src/azure_functions_langgraph/` and add tests in `tests/`.
+2. **Implement changes** in `src/azure_functions_durable_graph/` and add tests in `tests/`.
 
 3. **Run quality checks** locally:
     ```bash

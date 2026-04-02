@@ -2,7 +2,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from azure_functions_langgraph import ManifestBuilder
+from azure_functions_durable_graph import ManifestBuilder
 
 
 class DemoState(BaseModel):

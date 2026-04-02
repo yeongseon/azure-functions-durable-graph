@@ -1,8 +1,8 @@
-# Azure Functions LangGraph
+# Azure Functions Durable Graph
 
-LangGraph runtime for Azure Functions with Durable Functions orchestration.
+Manifest-first graph runtime for Azure Functions with Durable Functions orchestration.
 
-`azure-functions-langgraph` compiles graph-shaped workflows into Azure Functions
+`azure-functions-durable-graph` compiles graph-shaped workflows into Azure Functions
 applications that run on Durable Functions without violating orchestrator determinism.
 All user logic (LLM calls, tool invocations, routing decisions) executes in activities,
 keeping the orchestrator replay-safe.
@@ -16,7 +16,7 @@ keeping the orchestrator replay-safe.
 ```python
 from pydantic import BaseModel
 
-from azure_functions_langgraph import DurableGraphApp, ManifestBuilder
+from azure_functions_durable_graph import DurableGraphApp, ManifestBuilder
 
 
 class MyState(BaseModel):
@@ -59,7 +59,7 @@ app = runtime.function_app
 - **Replay-safe**: orchestrator determinism is enforced by architecture, not discipline.
 - **Typed state**: Pydantic v2 models for graph state with merge semantics.
 - **Human-in-the-loop**: external event support for approval workflows.
-- **Versioned graphs**: topology-derived hash for safe deployments.
+- **Versioned graphs**: manifest-derived hash for safe deployments.
 
 ## Feature Snapshot
 
@@ -74,7 +74,7 @@ app = runtime.function_app
 ### Developer experience
 
 - `ManifestBuilder` fluent API for declaring graphs.
-- `GraphManifest` with version and topology hash.
+- `GraphManifest` with version and manifest-derived hash.
 - `DurableGraphApp` wires everything into Azure Functions automatically.
 
 ## Where to go next

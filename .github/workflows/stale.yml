@@ -12,7 +12,7 @@ on:
 jobs:
   stale-issues:
     runs-on: ubuntu-latest
-    if: github.repository == 'yeongseon/azure-functions-langgraph'
+    if: github.repository == 'yeongseon/azure-functions-durable-graph'
 
     steps:
       - name: "Stale issues and PRs"

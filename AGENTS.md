@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Purpose
-`azure-functions-langgraph` provides a manifest-first LangGraph runtime for Azure Functions Python v2 applications using Durable Functions orchestration.
+`azure-functions-durable-graph` provides a manifest-first graph runtime for Azure Functions Python v2 applications using Durable Functions orchestration.
 
 ## Read First
 - `README.md`
